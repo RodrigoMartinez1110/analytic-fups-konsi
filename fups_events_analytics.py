@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from streamlit_autorefresh import st_autorefresh
 from pymongo import MongoClient
 import re
 
@@ -21,12 +22,20 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Atualização periódica a cada 10 minutos
+_ = st_autorefresh(interval=600_000, limit=None, key="auto_refresh")
+
 # Função para carregar e filtrar os dados
-@st.cache(ttl=600)  # Cache por 10 minutos
+@st.cache_resource
+def get_client():
+    return MongoClient(uri)
+
+@st.cache_data(ttl=600)
 def carregar_dados():
-    dados = list(collection.find())
+    client = get_client()
+    dados = list(client["growth"]["events"].find())
     df = pd.DataFrame(dados)
-    df['created_at'] = pd.to_datetime(df['created_at'])
+    df["created_at"] = pd.to_datetime(df["created_at"])
     return df
 
 # Carrega os dados
@@ -194,8 +203,4 @@ fig_temporal.update_layout(
 
 st.plotly_chart(fig_temporal, use_container_width=True)
 
-# -------------------------------
-# Atualização periódica a cada 10 minutos
-# -------------------------------
-# Verifique se o tempo de execução é superior a 10 minutos (600 segundos) e reinicie
-st.autorefresh(interval=600000)  # Atualiza a página a cada 10 minutos
+
