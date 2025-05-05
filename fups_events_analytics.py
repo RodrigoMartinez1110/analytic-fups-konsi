@@ -175,9 +175,10 @@ with col1:
         height=600,
     )
 
-    # Títulos dos eixos
-    fig_barras.update_yaxes(title_text='Quantidade de Eventos', secondary_y=False)
-    fig_barras.update_yaxes(title_text='Taxa de Resposta (%)', secondary_y=True)
+    # Títulos dos eixos e remoção das grades
+    fig_barras.update_xaxes(title_text='Template', showgrid=False)
+    fig_barras.update_yaxes(title_text='Quantidade de Eventos', secondary_y=False, showgrid=False)
+    fig_barras.update_yaxes(title_text='Taxa de Resposta (%)', secondary_y=True, showgrid=False)
 
     st.plotly_chart(fig_barras, use_container_width=True)
 
