@@ -1,4 +1,5 @@
-pymongo
-pandas
 streamlit
+pandas
 plotly
+pymongo
+streamlit-autorefresh
