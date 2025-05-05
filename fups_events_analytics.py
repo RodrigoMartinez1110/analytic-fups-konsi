@@ -159,7 +159,43 @@ with col2:
     st.plotly_chart(fig_taxa_resposta, use_container_width=True)
 
 # -------------------------------
+# Gráfico Temporal (Taxa de Resposta por Semana)
+# -------------------------------
+# Agrupando por semana para calcular a taxa de resposta
+df_filtrado['semana'] = df_filtrado['created_at'].dt.to_period('W')
+
+# Calculando a taxa de resposta semanal por template
+df_semana = df_filtrado.groupby(['semana', 'template']).agg(
+    resposta=('tipo_evento', lambda x: (x == 'resposta').sum()),
+    envio=('tipo_evento', lambda x: (x == 'envio').sum())
+).reset_index()
+
+# Calculando a taxa de resposta semanal
+df_semana['taxa_resposta_semanal'] = (df_semana['resposta'] / df_semana['envio']) * 100
+df_semana['semana'] = df_semana['semana'].dt.strftime('%Y-%m-%d')
+
+# Gráfico de linha temporal da taxa de resposta
+fig_temporal = px.line(
+    df_semana,
+    x='semana',
+    y='taxa_resposta_semanal',
+    color='template',
+    title='Taxa de Resposta Geral por Semana',
+    labels={'taxa_resposta_semanal': 'Taxa de Resposta (%)', 'semana': 'Semana'},
+    markers=True
+)
+
+fig_temporal.update_layout(
+    xaxis_title='Semana',
+    yaxis_title='Taxa de Resposta (%)',
+    height=600,
+    width=800
+)
+
+st.plotly_chart(fig_temporal, use_container_width=True)
+
+# -------------------------------
 # Atualização periódica a cada 10 minutos
 # -------------------------------
-time.sleep(600)  # Aguarda 10 minutos (600 segundos)
-st.experimental_rerun()  # Força a atualização do app
+# Verifique se o tempo de execução é superior a 10 minutos (600 segundos) e reinicie
+st.experimental_rerun()
