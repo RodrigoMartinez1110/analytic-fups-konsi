@@ -69,7 +69,19 @@ df_filtrado = df_filtrado.loc[
 # -------------------------------
 mapeamento_invertido = {
     "opt-in ativo saber mais": "robo_giovanna_leads_ativos_0_opt_in_ativo_Resposta_Saber mais",
-    # Restante do mapeamento
+    "opt-in pessoa errada": "robo_giovanna_leads_ativos_0_opt_in_ativo_Resposta_Pessoa errada",
+    "opt-in bloquear mensagens": "robo_giovanna_leads_ativos_0_opt_in_ativo_Resposta_Bloqueio",
+    "OPT_IN Resposta": "robo_giovanna_leads_ativos_0_opt_in_ativo_Resposta_Texto",
+    "opt-in ativo fup2": "robo_giovanna_leads_ativos_0fup2_ativo_Envio",
+    "FUP 2 resposta": "robo_giovanna_leads_ativos_0fup2_ativo_Resposta",
+    "opt-in ativo despedida": "robo_giovanna_leads_ativos_0despedida_ativo_Envio",
+    "Despedida resposta": "robo_giovanna_leads_ativos_0despedida_ativo_Resposta",
+    "opt-in ativo fup3": "robo_giovanna_leads_ativos_0fup3_ativo_Envio",
+    "FUP 3 resposta": "robo_giovanna_leads_ativos_0fup3_ativo_Resposta",
+    "opt-in ativo fup 30min": "robo_giovanna_leads_ativos_0opt_in_ativo_30min_v0_Envio",
+    "FUP 30min resposta": "robo_giovanna_leads_ativos_0opt_in_ativo_30min_v0_Resposta",
+    "opt-in ativo fup1": "robo_giovanna_leads_ativos_0fup1_ativo_Envio",
+    "FUP 1 resposta": "robo_giovanna_leads_ativos_0fup1_ativo_Resposta",
 }
 
 df_filtrado['event_name'] = df_filtrado['event_name'].map(mapeamento_invertido).fillna(df_filtrado['event_name'])
