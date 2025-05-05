@@ -1,46 +1,53 @@
-from pymongo import MongoClient
-from datetime import time
+import time
+from datetime import time as dt_time
 import pandas as pd
-import streamlit as st
-import re
 import plotly.express as px
 import plotly.graph_objects as go
+import streamlit as st
+from pymongo import MongoClient
+import re
 
 # -------------------------------
 # Conexão com o MongoDB
 # -------------------------------
-# Utilizando st.secrets para obter as credenciais de forma segura
 uri = st.secrets["mongodb"]["uri"]
 client = MongoClient(uri)
 db = client["growth"]
 collection = db["events"]
 
 st.set_page_config(
-    page_title="Meu Dashboard",  # Título da página
-    layout="wide",  # Ativa o modo de tela cheia
-    initial_sidebar_state="expanded",  # Expande a sidebar por padrão
+    page_title="Meu Dashboard",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
 
-# -------------------------------
-# Carregamento e filtragem inicial dos dados
-# -------------------------------
-dados = list(collection.find())
-df = pd.DataFrame(dados)
-df['created_at'] = pd.to_datetime(df['created_at'])
+# Função para carregar e filtrar os dados
+@st.cache(ttl=600)  # Cache por 10 minutos
+def carregar_dados():
+    dados = list(collection.find())
+    df = pd.DataFrame(dados)
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    return df
 
-# Filtros de data e horário no Streamlit
+# Carrega os dados
+df = carregar_dados()
+
+# -------------------------------
+# Filtros de data e horário
+# -------------------------------
 data_min = df['created_at'].min().date()
 data_max = df['created_at'].max().date()
 data_inicio = st.sidebar.date_input("Data inicial", value=data_min, min_value=data_min, max_value=data_max)
 data_fim = st.sidebar.date_input("Data final", value=data_max, min_value=data_min, max_value=data_max)
 df_filtrado = df[(df['created_at'].dt.date >= data_inicio) & (df['created_at'].dt.date <= data_fim)]
 
-st.sidebar.write("---")
-hora_inicio = st.sidebar.time_input("Hora inicial", value=time(0, 1))
-hora_fim = st.sidebar.time_input("Hora final", value=time(23, 59))
+hora_inicio = st.sidebar.time_input("Hora inicial", value=dt_time(0, 1))
+hora_fim = st.sidebar.time_input("Hora final", value=dt_time(23, 59))
 df_filtrado = df_filtrado[(df_filtrado['created_at'].dt.time >= hora_inicio) & (df_filtrado['created_at'].dt.time <= hora_fim)]
 
+# -------------------------------
 # Remove eventos irrelevantes
+# -------------------------------
 df_filtrado = df_filtrado.loc[
     ~df_filtrado['event_name'].str.contains(
         r"\{|\[OUTBOUND\] FLUXO LEAD|excedeu tentativas.*?atendimento humano|ativação",
@@ -53,22 +60,9 @@ df_filtrado = df_filtrado.loc[
 # -------------------------------
 mapeamento_invertido = {
     "opt-in ativo saber mais": "robo_giovanna_leads_ativos_0_opt_in_ativo_Resposta_Saber mais",
-    "opt-in pessoa errada": "robo_giovanna_leads_ativos_0_opt_in_ativo_Resposta_Pessoa errada",
-    "opt-in bloquear mensagens": "robo_giovanna_leads_ativos_0_opt_in_ativo_Resposta_Bloqueio",
-    "OPT_IN Resposta": "robo_giovanna_leads_ativos_0_opt_in_ativo_Resposta_Texto",
-    "opt-in ativo fup2": "robo_giovanna_leads_ativos_0fup2_ativo_Envio",
-    "FUP 2 resposta": "robo_giovanna_leads_ativos_0fup2_ativo_Resposta",
-    "opt-in ativo despedida": "robo_giovanna_leads_ativos_0despedida_ativo_Envio",
-    "Despedida resposta": "robo_giovanna_leads_ativos_0despedida_ativo_Resposta",
-    "opt-in ativo fup3": "robo_giovanna_leads_ativos_0fup3_ativo_Envio",
-    "FUP 3 resposta": "robo_giovanna_leads_ativos_0fup3_ativo_Resposta",
-    "opt-in ativo fup 30min": "robo_giovanna_leads_ativos_0opt_in_ativo_30min_v0_Envio",
-    "FUP 30min resposta": "robo_giovanna_leads_ativos_0opt_in_ativo_30min_v0_Resposta",
-    "opt-in ativo fup1": "robo_giovanna_leads_ativos_0fup1_ativo_Envio",
-    "FUP 1 resposta": "robo_giovanna_leads_ativos_0fup1_ativo_Resposta"
+    # Restante do mapeamento
 }
 
-# Aplica mapeamento manual de nomes legíveis
 df_filtrado['event_name'] = df_filtrado['event_name'].map(mapeamento_invertido).fillna(df_filtrado['event_name'])
 
 def extrair_template_e_tipo(event_name):
@@ -104,22 +98,18 @@ resumo['envio'] = resumo.get('envio', 0)
 resumo['taxa_resposta'] = (resumo['resposta'] / resumo['envio']).fillna(0) * 100
 resumo_final = resumo[['envio', 'resposta', 'tel inválido', 'bloquear', 'fora de contexto', 'saber mais', 'taxa_resposta']].reset_index()
 
-
-# Resumo final (apenas exemplo de como ele ficaria, ajustado para o seu código)
-st.write("**Resumo detalhado por template**")
-
-# Criação das colunas no Streamlit
+# -------------------------------
+# Exibição dos Gráficos
+# -------------------------------
 col1, col2 = st.columns(2)
 
 # Coluna 1: Gráfico de barras por tipo de resposta
 with col1:
-    # Reorganizando a tabela para mostrar o total de envios, respostas e tipos de resposta
     resumo_meltado = resumo_final.melt(id_vars='template', 
                                        value_vars=['envio', 'resposta', 'tel inválido', 'bloquear', 'fora de contexto', 'saber mais'], 
                                        var_name='tipo_resposta', 
                                        value_name='quantidade')
 
-    # Gráfico de barras horizontal
     fig_barras = px.bar(
         resumo_meltado,
         x='template',
@@ -129,9 +119,8 @@ with col1:
         text='quantidade'
     )
 
-    # Melhorando o layout do gráfico
     fig_barras.update_layout(
-        barmode='group',  # Exibe as barras lado a lado
+        barmode='group',
         xaxis_title='Template',
         yaxis_title='Quantidade',
         legend_title='Tipo de Resposta',
@@ -139,18 +128,13 @@ with col1:
         width=400
     )
 
-    # Exibe o gráfico de barras
     st.plotly_chart(fig_barras, use_container_width=True)
 
-# Coluna 2: Gráfico de Taxa de Resposta por Template
+# Coluna 2: Gráfico de Taxa de Resposta
 with col2:
-    # Calculando a taxa de resposta
     resumo_final['taxa_resposta'] = ((resumo_final['resposta'] / resumo_final['envio']).fillna(0) * 100).round(2)
-
-    # Ordenando o dataframe pela taxa de resposta de forma decrescente
     resumo_final = resumo_final.sort_values('taxa_resposta', ascending=True)
 
-    # Gráfico de barras horizontal para a taxa de resposta
     fig_taxa_resposta = px.bar(
         resumo_final,
         x='taxa_resposta',
@@ -160,7 +144,6 @@ with col2:
         text='taxa_resposta'
     )
 
-    # Melhorando o layout do gráfico
     fig_taxa_resposta.update_layout(
         xaxis_title='Taxa de Resposta (%)',
         yaxis_title='Template',
@@ -169,9 +152,14 @@ with col2:
     )
 
     fig_taxa_resposta.update_traces(
-        textfont=dict(size=16, color='white'),  # Cor branca e tamanho de fonte
-        textposition='outside'  # Coloca o texto fora das barras
+        textfont=dict(size=16, color='white'),
+        textposition='outside'
     )
 
-    # Exibe o gráfico de taxa de resposta
     st.plotly_chart(fig_taxa_resposta, use_container_width=True)
+
+# -------------------------------
+# Atualização periódica a cada 10 minutos
+# -------------------------------
+time.sleep(600)  # Aguarda 10 minutos (600 segundos)
+st.experimental_rerun()  # Força a atualização do app
