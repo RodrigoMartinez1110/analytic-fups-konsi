@@ -1,36 +1,25 @@
-import time
-import streamlit as st
 from pymongo import MongoClient
+from datetime import time
 import pandas as pd
+import streamlit as st
 import re
 import plotly.express as px
-
-# -------------------------------
-# Função de atualização a cada 10 minutos
-# -------------------------------
-def auto_update():
-    # Intervalo de atualização em segundos (10 minutos)
-    intervalo = 10 * 60  # 10 minutos em segundos
-
-    # Registrar a hora atual
-    agora = time.time()
-    
-    # Tempo até a próxima execução
-    tempo_ate_proxima_execucao = intervalo - (agora % intervalo)
-    
-    # Aguardar o tempo até a próxima execução
-    time.sleep(tempo_ate_proxima_execucao)
-    
-    # Forçar o Streamlit a atualizar a página
-    st.experimental_rerun()
+import plotly.graph_objects as go
 
 # -------------------------------
 # Conexão com o MongoDB
 # -------------------------------
+# Utilizando st.secrets para obter as credenciais de forma segura
 uri = st.secrets["mongodb"]["uri"]
 client = MongoClient(uri)
 db = client["growth"]
 collection = db["events"]
+
+st.set_page_config(
+    page_title="Meu Dashboard",  # Título da página
+    layout="wide",  # Ativa o modo de tela cheia
+    initial_sidebar_state="expanded",  # Expande a sidebar por padrão
+)
 
 # -------------------------------
 # Carregamento e filtragem inicial dos dados
@@ -45,6 +34,11 @@ data_max = df['created_at'].max().date()
 data_inicio = st.sidebar.date_input("Data inicial", value=data_min, min_value=data_min, max_value=data_max)
 data_fim = st.sidebar.date_input("Data final", value=data_max, min_value=data_min, max_value=data_max)
 df_filtrado = df[(df['created_at'].dt.date >= data_inicio) & (df['created_at'].dt.date <= data_fim)]
+
+st.sidebar.write("---")
+hora_inicio = st.sidebar.time_input("Hora inicial", value=time(0, 1))
+hora_fim = st.sidebar.time_input("Hora final", value=time(23, 59))
+df_filtrado = df_filtrado[(df_filtrado['created_at'].dt.time >= hora_inicio) & (df_filtrado['created_at'].dt.time <= hora_fim)]
 
 # Remove eventos irrelevantes
 df_filtrado = df_filtrado.loc[
@@ -110,10 +104,74 @@ resumo['envio'] = resumo.get('envio', 0)
 resumo['taxa_resposta'] = (resumo['resposta'] / resumo['envio']).fillna(0) * 100
 resumo_final = resumo[['envio', 'resposta', 'tel inválido', 'bloquear', 'fora de contexto', 'saber mais', 'taxa_resposta']].reset_index()
 
-# Exibir o resumo final
+
+# Resumo final (apenas exemplo de como ele ficaria, ajustado para o seu código)
 st.write("**Resumo detalhado por template**")
 
-# -------------------------------
-# Chama a função de atualização automática
-# -------------------------------
-auto_update()
+# Criação das colunas no Streamlit
+col1, col2 = st.columns(2)
+
+# Coluna 1: Gráfico de barras por tipo de resposta
+with col1:
+    # Reorganizando a tabela para mostrar o total de envios, respostas e tipos de resposta
+    resumo_meltado = resumo_final.melt(id_vars='template', 
+                                       value_vars=['envio', 'resposta', 'tel inválido', 'bloquear', 'fora de contexto', 'saber mais'], 
+                                       var_name='tipo_resposta', 
+                                       value_name='quantidade')
+
+    # Gráfico de barras horizontal
+    fig_barras = px.bar(
+        resumo_meltado,
+        x='template',
+        y='quantidade',
+        color='tipo_resposta',
+        title='Desempenho por Template e Tipo de Resposta',
+        text='quantidade'
+    )
+
+    # Melhorando o layout do gráfico
+    fig_barras.update_layout(
+        barmode='group',  # Exibe as barras lado a lado
+        xaxis_title='Template',
+        yaxis_title='Quantidade',
+        legend_title='Tipo de Resposta',
+        height=600,
+        width=400
+    )
+
+    # Exibe o gráfico de barras
+    st.plotly_chart(fig_barras, use_container_width=True)
+
+# Coluna 2: Gráfico de Taxa de Resposta por Template
+with col2:
+    # Calculando a taxa de resposta
+    resumo_final['taxa_resposta'] = ((resumo_final['resposta'] / resumo_final['envio']).fillna(0) * 100).round(2)
+
+    # Ordenando o dataframe pela taxa de resposta de forma decrescente
+    resumo_final = resumo_final.sort_values('taxa_resposta', ascending=True)
+
+    # Gráfico de barras horizontal para a taxa de resposta
+    fig_taxa_resposta = px.bar(
+        resumo_final,
+        x='taxa_resposta',
+        y='template',
+        orientation='h',
+        title='Taxa de Resposta por Template (%)',
+        text='taxa_resposta'
+    )
+
+    # Melhorando o layout do gráfico
+    fig_taxa_resposta.update_layout(
+        xaxis_title='Taxa de Resposta (%)',
+        yaxis_title='Template',
+        height=600,
+        width=450
+    )
+
+    fig_taxa_resposta.update_traces(
+        textfont=dict(size=16, color='white'),  # Cor branca e tamanho de fonte
+        textposition='outside'  # Coloca o texto fora das barras
+    )
+
+    # Exibe o gráfico de taxa de resposta
+    st.plotly_chart(fig_taxa_resposta, use_container_width=True)
