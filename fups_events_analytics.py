@@ -15,6 +15,12 @@ client = MongoClient(uri)
 db = client["growth"]
 collection = db["events"]
 
+st.set_page_config(
+    page_title="Meu Dashboard",  # Título da página
+    layout="wide",  # Ativa o modo de tela cheia
+    initial_sidebar_state="expanded",  # Expande a sidebar por padrão
+)
+
 # -------------------------------
 # Carregamento e filtragem inicial dos dados
 # -------------------------------
