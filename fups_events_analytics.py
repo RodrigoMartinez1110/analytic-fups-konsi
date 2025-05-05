@@ -198,4 +198,4 @@ st.plotly_chart(fig_temporal, use_container_width=True)
 # Atualização periódica a cada 10 minutos
 # -------------------------------
 # Verifique se o tempo de execução é superior a 10 minutos (600 segundos) e reinicie
-st.experimental_rerun()
+st.autorefresh(interval=600000)  # Atualiza a página a cada 10 minutos
