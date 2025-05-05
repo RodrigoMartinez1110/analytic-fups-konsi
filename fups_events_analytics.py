@@ -2,6 +2,7 @@ import time
 from datetime import time as dt_time
 import pandas as pd
 import plotly.express as px
+from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
@@ -126,28 +127,57 @@ col1, col2 = st.columns(2)
 
 # Coluna 1: Gráfico de barras por tipo de resposta
 with col1:
-    resumo_meltado = resumo_final.melt(id_vars='template', 
-                                       value_vars=['envio', 'resposta', 'tel inválido', 'bloquear', 'fora de contexto', 'saber mais'], 
-                                       var_name='tipo_resposta', 
-                                       value_name='quantidade')
+    # Cria figura com eixo y primário e secundário
+    fig_barras = make_subplots(specs=[[{"secondary_y": True}]])
 
-    fig_barras = px.bar(
-        resumo_meltado,
-        x='template',
-        y='quantidade',
-        color='tipo_resposta',
-        title='Desempenho por Template e Tipo de Resposta',
-        text='quantidade'
+    # Lista das categorias de contagem
+    categorias = [
+        'envio',
+        'resposta',
+        'tel inválido',
+        'bloquear',
+        'fora de contexto',
+        'saber mais'
+    ]
+
+    # Adiciona cada barra ao eixo principal (y esquerdo)
+    for cat in categorias:
+        fig_barras.add_trace(
+            go.Bar(
+                x=resumo_final['template'],
+                y=resumo_final[cat],
+                name=cat.capitalize(),
+                text=resumo_final[cat],
+                textposition="auto"
+            ),
+            secondary_y=False
+        )
+
+    # Adiciona a linha de taxa de resposta ao eixo secundário (y direito)
+    fig_barras.add_trace(
+        go.Scatter(
+            x=resumo_final['template'],
+            y=resumo_final['taxa_resposta'],
+            name='Taxa de Resposta (%)',
+            mode='lines+markers',
+            marker=dict(size=8),
+            yaxis='y2'
+        ),
+        secondary_y=True
     )
 
+    # Layout geral
     fig_barras.update_layout(
+        title='Desempenho por Template e Tipo de Resposta (com Taxa)',
         barmode='group',
         xaxis_title='Template',
-        yaxis_title='Quantidade',
-        legend_title='Tipo de Resposta',
+        legend_title='Métricas',
         height=600,
-        width=400
     )
+
+    # Títulos dos eixos
+    fig_barras.update_yaxes(title_text='Quantidade de Eventos', secondary_y=False)
+    fig_barras.update_yaxes(title_text='Taxa de Resposta (%)', secondary_y=True)
 
     st.plotly_chart(fig_barras, use_container_width=True)
 
