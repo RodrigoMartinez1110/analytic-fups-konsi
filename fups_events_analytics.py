@@ -225,6 +225,7 @@ df_semana = df_filtrado.groupby(['semana', 'template']).agg(
 ).reset_index()
 
 # Calcula a taxa
+df_semana = df_semana[df_semana['envio'] > 0].copy()
 df_semana['taxa_resposta_semanal'] = (df_semana['resposta'] / df_semana['envio']) * 100
 df_semana['semana'] = df_semana['semana'].dt.strftime('%Y-%m-%d')
 
