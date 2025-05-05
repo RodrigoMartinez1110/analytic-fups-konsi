@@ -3,3 +3,4 @@ pandas
 plotly
 pymongo
 streamlit-autorefresh
+plotly.subplots
