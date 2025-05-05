@@ -216,17 +216,19 @@ with col2:
 # Agrupando por semana para calcular a taxa de resposta
 df_filtrado['semana'] = df_filtrado['created_at'].dt.to_period('W')
 
-# Calculando a taxa de resposta semanal por template
+df_filtrado.loc[df_filtrado['template'] == 'opt_in_ativo', 'tipo_evento'].unique()
+df_filtrado['semana'] = df_filtrado['created_at'].dt.to_period('W')
+tipos_resposta = ['resposta', 'bloquear', 'tel inválido', 'fora de contexto', 'saber mais', 'texto', 'pessoa errada']
 df_semana = df_filtrado.groupby(['semana', 'template']).agg(
-    resposta=('tipo_evento', lambda x: (x == 'resposta').sum()),
+    resposta=('tipo_evento', lambda x: x.isin(tipos_resposta).sum()),
     envio=('tipo_evento', lambda x: (x == 'envio').sum())
 ).reset_index()
 
-# Calculando a taxa de resposta semanal
+# Calcula a taxa
 df_semana['taxa_resposta_semanal'] = (df_semana['resposta'] / df_semana['envio']) * 100
 df_semana['semana'] = df_semana['semana'].dt.strftime('%Y-%m-%d')
 
-# Gráfico de linha temporal da taxa de resposta
+# Gráfico
 fig_temporal = px.line(
     df_semana,
     x='semana',
@@ -245,5 +247,3 @@ fig_temporal.update_layout(
 )
 
 st.plotly_chart(fig_temporal, use_container_width=True)
-
-
