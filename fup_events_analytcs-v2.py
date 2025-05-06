@@ -127,12 +127,19 @@ df_filtrado = df_filtrado[df_filtrado['template'] != 'desconhecido'].copy()
 # FILTRO DE TEMPLATES
 # -------------------------------
 templates_disponiveis = sorted(df_filtrado['template'].unique())
+opcoes_template = ["Todos"] + templates_disponiveis
+
 templates_selecionados = st.sidebar.multiselect(
     "Selecionar templates para análise",
-    options=templates_disponiveis,
-    default=templates_disponiveis  # Todos selecionados por padrão
+    options=opcoes_template,
+    default=["Todos"]
 )
-df_filtrado = df_filtrado[df_filtrado['template'].isin(templates_selecionados)]
+
+# Lógica: se "Todos" está selecionado ou nada selecionado, inclui todos
+if "Todos" in templates_selecionados or not templates_selecionados:
+    df_filtrado = df_filtrado[df_filtrado['template'].isin(templates_disponiveis)]
+else:
+    df_filtrado = df_filtrado[df_filtrado['template'].isin(templates_selecionados)]
 
 
 
