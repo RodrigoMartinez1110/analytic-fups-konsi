@@ -80,12 +80,7 @@ df_filtrado = df_filtrado[
 def extrair_template_e_tipo(event_name):
     # Mapeia os eventos específicos de "robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0"
     if 'robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0' in event_name:
-        if 'Resposta' in event_name:
-            template = 'fup_10min_resposta'
-        elif 'Envio' in event_name:
-            template = 'fup_10min_envio'
-        else:
-            template = 'desconhecido'  # Caso não seja nem "Resposta" nem "Envio"
+        template = 'fup_10min'  # Simplificado para fup_10min para ambos os casos
     else:
         match_template = re.search(
             r'(robo_giovanna_leads_ativos_\d+opt_in_ativo_10min_v\d+_(?:Resposta|Envio)|'
