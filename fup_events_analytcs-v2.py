@@ -162,7 +162,6 @@ with col1:
             xaxis=dict(
                 showline=False,
                 showticklabels=True,
-                tickfont=dict(family="Arial", size=12, color="white"),
                 tickangle=45
             ),
             yaxis=dict(
@@ -173,7 +172,6 @@ with col1:
             yaxis2=dict(
                 title=" ",
                 titlefont=dict(color="white"),
-                tickfont=dict(color="white"),
                 overlaying="y",
                 side="right",
                 showgrid=False,
