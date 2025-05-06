@@ -127,69 +127,69 @@ df_filtrado = df_filtrado[df_filtrado['template'] != 'desconhecido'].copy()
 col1, col2 = st.columns(2)
 # Grafico 1
 with col1:
+    # Agrupamento e preparação dos dados
     distribuicao_resposta = df_filtrado.groupby(['template', 'tipo'])['tipo'].size().unstack(fill_value=0)
     distribuicao_resposta_reset = distribuicao_resposta.reset_index()
-    
-    # Agrupar por template e categoria para taxa de resposta
+
     taxa_resposta = df_filtrado.groupby(['template', 'categoria'])['tipo'].size().unstack(fill_value=0)
     taxa_resposta['resposta'] = taxa_resposta.get('resposta', 0)
     taxa_resposta['envio'] = taxa_resposta.get('envio', 0)
     taxa_resposta['taxa_resposta'] = (taxa_resposta['resposta'] / taxa_resposta['envio']).fillna(0) * 100
-    taxa_resposta_reset = taxa_resposta[['taxa_resposta']].reset_index()
-    
-    # Criar gráfico
+    taxa_resposta_reset = taxa_resposta[['template', 'taxa_resposta']].reset_index(drop=True)
+
+    # Criar figura
     fig = go.Figure()
 
+    # Adicionar barras empilhadas por tipo
     for tipo in distribuicao_resposta.columns:
         fig.add_trace(go.Bar(
             x=distribuicao_resposta_reset['template'],
-            y=distribuicao_resposta[tipo],
+            y=distribuicao_resposta_reset[tipo],
             name=tipo
         ))
-    
-        # Linha da taxa de resposta
-        fig.add_trace(go.Scatter(
-            x=taxa_resposta_reset['template'],
-            y=taxa_resposta_reset['taxa_resposta'],
-            mode='lines+markers',
-            name='Taxa de Resposta (%)',
-            line=dict(color='white', dash='dot'),
-            yaxis='y2'
-        ))
-        
-        # Layout geral
-        fig.update_layout(
-            xaxis=dict(
-                showline=False,
-                showticklabels=True,
-                tickangle=45
-            ),
-            yaxis=dict(
-                showgrid=False,
-                zeroline=False,
-                visible=False  # Oculta o eixo Y principal
-            ),
-            yaxis2=dict(
-                title=" ",
-                overlaying="y",
-                side="right",
-                showgrid=False,
-                zeroline=False,
-                visible=True
-            ),
-            barmode='stack',
-            height=400,
-            legend_title_text="Tipo de Resposta",
-            legend=dict(font=dict(color="white")),
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            margin=dict(l=0, r=40, t=0, b=40),
-        )
-        
-        # Exibindo o gráfico
-        fig.update_xaxes(tickangle=45)
-        st.plotly_chart(fig)
 
+    # Adicionar linha da taxa de resposta (fora do loop!)
+    fig.add_trace(go.Scatter(
+        x=taxa_resposta_reset['template'],
+        y=taxa_resposta_reset['taxa_resposta'],
+        mode='lines+markers',
+        name='Taxa de Resposta (%)',
+        line=dict(color='white', dash='dot'),
+        yaxis='y2'
+    ))
+
+    # Layout
+    fig.update_layout(
+        xaxis=dict(
+            showline=False,
+            showticklabels=True,
+            tickangle=45,
+            tickfont=dict(color="white")
+        ),
+        yaxis=dict(
+            showgrid=False,
+            zeroline=False,
+            visible=False
+        ),
+        yaxis2=dict(
+            title=" ",
+            overlaying="y",
+            side="right",
+            showgrid=False,
+            zeroline=False,
+            visible=True,
+            tickfont=dict(color="white")
+        ),
+        barmode='stack',
+        height=400,
+        legend_title_text="Tipo de Resposta",
+        legend=dict(font=dict(color="white")),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=0, r=40, t=0, b=40),
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
 # Coluna 2: Gráfico de Taxa de Resposta
 with col2:
