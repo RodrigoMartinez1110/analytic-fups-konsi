@@ -129,79 +129,79 @@ col1, col2 = st.columns(2)
 with col1:
     import plotly.graph_objects as go
 
-# Agrupar por template e tipo, contando as ocorrências
-distribuicao_resposta = df_filtrado.groupby(['template', 'tipo'])['tipo'].size().unstack(fill_value=0)
-
-# Resetando o índice para facilitar o uso no gráfico
-distribuicao_resposta_reset = distribuicao_resposta.reset_index()
-
-# Agrupar por template e categoria, contando os tipos para calcular a taxa de resposta
-taxa_resposta = df_filtrado.groupby(['template', 'categoria'])['tipo'].size().unstack(fill_value=0)
-
-# Calcular a taxa de resposta
-taxa_resposta['resposta'] = taxa_resposta.get('resposta', 0)
-taxa_resposta['envio'] = taxa_resposta.get('envio', 0)
-
-# Calcular a taxa de resposta (evitar divisão por 0)
-taxa_resposta['taxa_resposta'] = (taxa_resposta['resposta'] / taxa_resposta['envio']).fillna(0) * 100
-
-# Resetando o índice para facilitar o uso no gráfico
-taxa_resposta_reset = taxa_resposta[['taxa_resposta']].reset_index()
-
-# Criando o gráfico
-fig = go.Figure()
-
-# Barras empilhadas para distribuição de respostas
-for tipo in distribuicao_resposta.columns:
-    fig.add_trace(go.Bar(
-        x=distribuicao_resposta_reset['template'],
-        y=distribuicao_resposta[tipo],
-        name=tipo,
+    # Agrupar por template e tipo, contando as ocorrências
+    distribuicao_resposta = df_filtrado.groupby(['template', 'tipo'])['tipo'].size().unstack(fill_value=0)
+    
+    # Resetando o índice para facilitar o uso no gráfico
+    distribuicao_resposta_reset = distribuicao_resposta.reset_index()
+    
+    # Agrupar por template e categoria, contando os tipos para calcular a taxa de resposta
+    taxa_resposta = df_filtrado.groupby(['template', 'categoria'])['tipo'].size().unstack(fill_value=0)
+    
+    # Calcular a taxa de resposta
+    taxa_resposta['resposta'] = taxa_resposta.get('resposta', 0)
+    taxa_resposta['envio'] = taxa_resposta.get('envio', 0)
+    
+    # Calcular a taxa de resposta (evitar divisão por 0)
+    taxa_resposta['taxa_resposta'] = (taxa_resposta['resposta'] / taxa_resposta['envio']).fillna(0) * 100
+    
+    # Resetando o índice para facilitar o uso no gráfico
+    taxa_resposta_reset = taxa_resposta[['taxa_resposta']].reset_index()
+    
+    # Criando o gráfico
+    fig = go.Figure()
+    
+    # Barras empilhadas para distribuição de respostas
+    for tipo in distribuicao_resposta.columns:
+        fig.add_trace(go.Bar(
+            x=distribuicao_resposta_reset['template'],
+            y=distribuicao_resposta[tipo],
+            name=tipo,
+        ))
+    
+    # Linha para taxa de resposta
+    fig.add_trace(go.Scatter(
+        x=taxa_resposta_reset['template'],
+        y=taxa_resposta_reset['taxa_resposta'],
+        mode='lines+markers',
+        name='Taxa de Resposta (%)',
+        line=dict(color='black', dash='dot'),
+        yaxis='y2',  # Eixo y secundário para a taxa de resposta
     ))
-
-# Linha para taxa de resposta
-fig.add_trace(go.Scatter(
-    x=taxa_resposta_reset['template'],
-    y=taxa_resposta_reset['taxa_resposta'],
-    mode='lines+markers',
-    name='Taxa de Resposta (%)',
-    line=dict(color='black', dash='dot'),
-    yaxis='y2',  # Eixo y secundário para a taxa de resposta
-))
-
-# Atualizar layout
-fig.update_layout(
-    title="Distribuição das Respostas por Template e Taxa de Resposta",
-    xaxis_title="Template",
-    yaxis=dict(
-        title="Quantidade de Respostas", 
-        showgrid=False,  # Remover grid do eixo Y
-        zeroline=False,  # Remover linha do zero
-        visible=False,   # Tornar o eixo Y invisível
-    ),
-    yaxis2=dict(
-        title="Taxa de Resposta (%)", 
-        overlaying="y", 
-        side="right",
-        showgrid=False,  # Remover grid do eixo Y2
-        zeroline=False,  # Remover linha do zero
-        visible=False,   # Tornar o eixo Y2 invisível
-    ),
-    barmode='stack',
-    height=600,
-    legend_title="Tipo de Resposta",
-    margin=dict(l=40, r=40, t=60, b=40),
-)
-
-# Remover títulos e eixos
-fig.update_layout(
-    xaxis=dict(showline=False, showticklabels=False),  # Remover linha e labels do eixo X
-    yaxis=dict(showline=False, showticklabels=False),  # Remover linha e labels do eixo Y
-)
-
-# Exibindo o gráfico
-fig.update_xaxes(tickangle=45)
-st.plotly_chart(fig)
+    
+    # Atualizar layout
+    fig.update_layout(
+        title="Distribuição das Respostas por Template e Taxa de Resposta",
+        xaxis_title="Template",
+        yaxis=dict(
+            title="Quantidade de Respostas", 
+            showgrid=False,  # Remover grid do eixo Y
+            zeroline=False,  # Remover linha do zero
+            visible=False,   # Tornar o eixo Y invisível
+        ),
+        yaxis2=dict(
+            title="Taxa de Resposta (%)", 
+            overlaying="y", 
+            side="right",
+            showgrid=False,  # Remover grid do eixo Y2
+            zeroline=False,  # Remover linha do zero
+            visible=False,   # Tornar o eixo Y2 invisível
+        ),
+        barmode='stack',
+        height=600,
+        legend_title="Tipo de Resposta",
+        margin=dict(l=40, r=40, t=60, b=40),
+    )
+    
+    # Remover títulos e eixos
+    fig.update_layout(
+        xaxis=dict(showline=False, showticklabels=False),  # Remover linha e labels do eixo X
+        yaxis=dict(showline=False, showticklabels=False),  # Remover linha e labels do eixo Y
+    )
+    
+    # Exibindo o gráfico
+    fig.update_xaxes(tickangle=45)
+    st.plotly_chart(fig)
 
 
 # Coluna 2: Gráfico de Taxa de Resposta
