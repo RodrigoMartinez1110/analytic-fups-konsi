@@ -78,24 +78,33 @@ df_filtrado = df_filtrado[
 
 
 def extrair_template_e_tipo(event_name):
-    match_template = re.search(
-        r'(robo_giovanna_leads_ativos_\d+opt_in_ativo_10min_v\d+_(?:Resposta|Envio)|'
-        r'opt_in_ativo(?:_[a-z0-9]+_v\d+)?|'
-        r'optin(?:_?[a-z0-9]+)?|'
-        r'fup_15_min_v\d+|'
-        r'fup[123]_ativo|'
-        r'fup2h|'
-        r'fup30min|'
-        r'optinnegv01|'
-        r'neg[123]|'
-        r'despedida_ativo|'
-        r'perda_sem interação|'
-        r'disparo_novo_\d+|'
-        r'proposta)',
-        event_name,
-        re.IGNORECASE
-    )
-    template = match_template.group(1).lower() if match_template else 'desconhecido'
+    # Mapeia os eventos específicos de "robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0"
+    if 'robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0' in event_name:
+        if 'Resposta' in event_name:
+            template = 'fup_10min_resposta'
+        elif 'Envio' in event_name:
+            template = 'fup_10min_envio'
+        else:
+            template = 'desconhecido'  # Caso não seja nem "Resposta" nem "Envio"
+    else:
+        match_template = re.search(
+            r'(robo_giovanna_leads_ativos_\d+opt_in_ativo_10min_v\d+_(?:Resposta|Envio)|'
+            r'opt_in_ativo(?:_[a-z0-9]+_v\d+)?|'
+            r'optin(?:_?[a-z0-9]+)?|'
+            r'fup_15_min_v\d+|'
+            r'fup[123]_ativo|'
+            r'fup2h|'
+            r'fup30min|'
+            r'optinnegv01|'
+            r'neg[123]|'
+            r'despedida_ativo|'
+            r'perda_sem interação|'
+            r'disparo_novo_\d+|'
+            r'proposta)',
+            event_name,
+            re.IGNORECASE
+        )
+        template = match_template.group(1).lower() if match_template else 'desconhecido'
 
     # 2. Normalizar o nome do evento para facilitar o match
     lower = event_name.lower()
