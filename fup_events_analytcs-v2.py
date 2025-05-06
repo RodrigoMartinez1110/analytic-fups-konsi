@@ -62,8 +62,18 @@ df_filtrado = df[
     ~df['event_name'].str.contains("{", na=False)
 ]
 
+eventos_validos = [
+    'outbound',
+    'ativação',
+    'outboud',  # possível erro de digitação incluso intencionalmente
+    'robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0_Envio',
+    'robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0_Resposta'
+]
+
+padrao_regex = '|'.join(eventos_validos)
+
 df_filtrado = df_filtrado[
-    df_filtrado['event_name'].str.contains('outbound|ativação|outboud', case=False, na=False)
+    df_filtrado['event_name'].str.contains(padrao_regex, case=False, na=False)
 ]
 
 
