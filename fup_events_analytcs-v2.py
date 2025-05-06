@@ -127,28 +127,29 @@ df_filtrado = df_filtrado[df_filtrado['template'] != 'desconhecido'].copy()
 col1, col2 = st.columns(2)
 # Grafico 1
 with col1:
-    # Agrupamento e preparação dos dados
+    # Agrupar por template e tipo para distribuição de respostas
     distribuicao_resposta = df_filtrado.groupby(['template', 'tipo'])['tipo'].size().unstack(fill_value=0)
     distribuicao_resposta_reset = distribuicao_resposta.reset_index()
-
+    
+    # Agrupar por template e categoria para taxa de resposta
     taxa_resposta = df_filtrado.groupby(['template', 'categoria'])['tipo'].size().unstack(fill_value=0)
     taxa_resposta['resposta'] = taxa_resposta.get('resposta', 0)
     taxa_resposta['envio'] = taxa_resposta.get('envio', 0)
     taxa_resposta['taxa_resposta'] = (taxa_resposta['resposta'] / taxa_resposta['envio']).fillna(0) * 100
-    taxa_resposta_reset = taxa_resposta[['template', 'taxa_resposta']].reset_index(drop=True)
-
-    # Criar figura
+    taxa_resposta_reset = taxa_resposta[['taxa_resposta']].reset_index()
+    
+    # Criar gráfico
     fig = go.Figure()
-
-    # Adicionar barras empilhadas por tipo
+    
+    # Barras empilhadas por tipo
     for tipo in distribuicao_resposta.columns:
         fig.add_trace(go.Bar(
             x=distribuicao_resposta_reset['template'],
             y=distribuicao_resposta_reset[tipo],
             name=tipo
         ))
-
-    # Adicionar linha da taxa de resposta (fora do loop!)
+    
+    # Linha da taxa de resposta (eixo Y2)
     fig.add_trace(go.Scatter(
         x=taxa_resposta_reset['template'],
         y=taxa_resposta_reset['taxa_resposta'],
@@ -157,14 +158,14 @@ with col1:
         line=dict(color='white', dash='dot'),
         yaxis='y2'
     ))
-
+    
     # Layout
     fig.update_layout(
         xaxis=dict(
             showline=False,
             showticklabels=True,
             tickangle=45,
-            tickfont=dict(color="white")
+            tickfont=dict(family="Arial", size=12, color="white")
         ),
         yaxis=dict(
             showgrid=False,
@@ -186,10 +187,10 @@ with col1:
         legend=dict(font=dict(color="white")),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
-        margin=dict(l=0, r=40, t=0, b=40),
+        margin=dict(l=0, r=40, t=0, b=40)
     )
-
-    st.plotly_chart(fig, use_container_width=True)
+    
+    st.plotly_chart(fig)
 
 # Coluna 2: Gráfico de Taxa de Resposta
 with col2:
