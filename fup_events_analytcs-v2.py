@@ -78,9 +78,10 @@ df_filtrado = df_filtrado[
 
 
 def extrair_template_e_tipo(event_name):
-    # 1. Extrair o template com regex
     match_template = re.search(
-        r'(opt_in_ativo(?:_30min_v\d+)?|'
+        r'(robo_giovanna_leads_ativos_\d+opt_in_ativo_10min_v\d+_(?:Resposta|Envio)|'
+        r'opt_in_ativo(?:_[a-z0-9]+_v\d+)?|'
+        r'optin(?:_?[a-z0-9]+)?|'
         r'fup_15_min_v\d+|'
         r'fup[123]_ativo|'
         r'fup2h|'
