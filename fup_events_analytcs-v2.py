@@ -63,7 +63,7 @@ df_filtrado = df[
 ]
 
 df_filtrado = df_filtrado[
-    df_filtrado['event_name'].str.contains('outbound|ativação', case=False, na=False)
+    df_filtrado['event_name'].str.contains('outbound|ativação|outboud', case=False, na=False)
 ]
 
 
