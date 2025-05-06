@@ -196,7 +196,11 @@ fig1.update_layout(
     legend=dict(font=dict(color="white")),
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)',
-    margin=dict(l=0, r=40, t=20, b=40)
+    margin=dict(l=0, r=40, t=20, b=40),
+    hoverlabel= dict(
+        bgcolor="black",
+        font=dict(color="white")
+    )
 )
 
 st.plotly_chart(fig1, use_container_width=True)
