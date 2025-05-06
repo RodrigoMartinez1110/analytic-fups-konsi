@@ -246,3 +246,5 @@ fig3.update_layout(
 )
 
 st.plotly_chart(fig3, use_container_width=True)
+
+st.write(df_filtrado['template'].unique())
