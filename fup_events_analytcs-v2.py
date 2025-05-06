@@ -123,6 +123,18 @@ def extrair_template_e_tipo(event_name):
 df_filtrado[['template', 'tipo', 'categoria']] = df_filtrado['event_name'].apply(extrair_template_e_tipo)
 df_filtrado = df_filtrado[df_filtrado['template'] != 'desconhecido'].copy()
 
+# -------------------------------
+# FILTRO DE TEMPLATES
+# -------------------------------
+templates_disponiveis = sorted(df_filtrado['template'].unique())
+templates_selecionados = st.sidebar.multiselect(
+    "Selecionar templates para análise",
+    options=templates_disponiveis,
+    default=templates_disponiveis  # Todos selecionados por padrão
+)
+df_filtrado = df_filtrado[df_filtrado['template'].isin(templates_selecionados)]
+
+
 
 # -------------------------------
 # Gráfico 1: Barras empilhadas + Linha de taxa de resposta
