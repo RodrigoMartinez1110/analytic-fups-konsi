@@ -171,7 +171,7 @@ with col1:
             ),
             yaxis2=dict(
                 title=" ",
-                titlefont=dict(color="white"),
+                tickfont=dict(color="white"),
                 overlaying="y",
                 side="right",
                 showgrid=False,
