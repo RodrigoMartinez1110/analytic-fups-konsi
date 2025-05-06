@@ -276,7 +276,7 @@ for template in taxa_resposta_semanal_template['template'].unique():
         x=df_template['semana'],
         y=df_template['taxa_resposta'],
         mode='lines+markers',
-        name=f'Taxa de Resposta - {template}',
+        name=f'{template} - taxa %',
     ))
 
 # Atualizando o layout do gráfico
