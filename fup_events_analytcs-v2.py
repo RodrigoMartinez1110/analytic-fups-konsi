@@ -165,7 +165,7 @@ with col1:
         y=taxa_resposta_reset['taxa_resposta'],
         mode='lines+markers',
         name='Taxa de Resposta (%)',
-        line=dict(color='black', dash='dot'),
+        line=dict(color='white', dash='dot'),
         yaxis='y2',  # Eixo y secundário para a taxa de resposta
     ))
     
@@ -188,15 +188,26 @@ with col1:
             visible=False,   # Tornar o eixo Y2 invisível
         ),
         barmode='stack',
-        height=600,
+        height=400,
         legend_title="Tipo de Resposta",
-        margin=dict(l=40, r=40, t=60, b=40),
+        margin=dict(l=0, r=40, t=0, b=40),
     )
     
     # Remover títulos e eixos
     fig.update_layout(
-        xaxis=dict(showline=False, showticklabels=False),  # Remover linha e labels do eixo X
-        yaxis=dict(showline=False, showticklabels=False),  # Remover linha e labels do eixo Y
+        xaxis=dict(
+            showline=False,
+            showticklabels=True,
+            tickfont=dict(
+                family="Arial",   # ou "Courier New", "Times New Roman", etc.
+                size=12,
+                color="white"
+            )
+        ),
+        yaxis=dict(
+            showline=False,
+            showticklabels=False
+        )
     )
     
     # Exibindo o gráfico
