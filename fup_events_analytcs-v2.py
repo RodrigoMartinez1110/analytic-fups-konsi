@@ -129,18 +129,14 @@ col1, col2 = st.columns(2)
 with col1:
     import plotly.graph_objects as go
 
-    # Criar figura
-    fig = go.Figure()
+for tipo in distribuicao_resposta.columns:
+    fig.add_trace(go.Bar(
+        x=distribuicao_resposta_reset['template'],
+        y=distribuicao_resposta[tipo],
+        name=tipo
+    ))
 
-    # Adicionar barras empilhadas para cada tipo de resposta
-    for tipo in distribuicao_resposta.columns:
-        fig.add_trace(go.Bar(
-            x=distribuicao_resposta_reset['template'],
-            y=distribuicao_resposta[tipo],
-            name=tipo
-        ))
-
-    # Adicionar linha única da taxa de resposta
+    # Linha da taxa de resposta
     fig.add_trace(go.Scatter(
         x=taxa_resposta_reset['template'],
         y=taxa_resposta_reset['taxa_resposta'],
@@ -149,8 +145,8 @@ with col1:
         line=dict(color='white', dash='dot'),
         yaxis='y2'
     ))
-
-    # Atualizar layout
+    
+    # Layout geral
     fig.update_layout(
         xaxis=dict(
             showline=False,
@@ -180,10 +176,11 @@ with col1:
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         margin=dict(l=0, r=40, t=0, b=40),
-        showlegend=True
     )
-
-    st.plotly_chart(fig, use_container_width=True)
+    
+    # Exibindo o gráfico
+    fig.update_xaxes(tickangle=45)
+    st.plotly_chart(fig)
 
 
 # Coluna 2: Gráfico de Taxa de Resposta
