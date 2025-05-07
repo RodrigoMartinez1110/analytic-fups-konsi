@@ -298,4 +298,4 @@ fig3_3dias.update_layout(
     showlegend=True  # Remover a legenda, caso não queira exibir
 )
 
-st.plotly_chart(fig3, use_container_width=True)
+st.plotly_chart(fig3_3dias, use_container_width=True)
