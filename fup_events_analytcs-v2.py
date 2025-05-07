@@ -278,6 +278,7 @@ fig3.update_layout(
     title="Taxa de Resposta Semanal por Template",
     xaxis_title="Semana",
     yaxis_title="Taxa de Resposta (%)",
+    yaxis=dict(range=[0, 100], dtick=5),  # eixo Y de 0 a 100 com passo de 5
     height=300,
     margin=dict(l=40, r=40, t=40, b=40),
     legend_title="Template",
