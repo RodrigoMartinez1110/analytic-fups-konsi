@@ -256,34 +256,46 @@ st.plotly_chart(fig2, use_container_width=True)
 # -------------------------------
 # Gráfico 3: Taxa de Resposta Semanal por Template
 # -------------------------------
-df_filtrado['created_at'] = pd.to_datetime(df_filtrado['created_at'])
-df_filtrado['semana'] = df_filtrado['created_at'].dt.to_period('W')
-taxa_resposta_semanal_template = df_filtrado.groupby(['semana', 'template']).apply(
-    lambda x: (x['tipo'] == 'resposta').sum() / (x['tipo'] == 'envio').sum() * 100 if (x['tipo'] == 'envio').sum() > 0 else 0
+# Criar uma coluna de data com o dia sem a hora
+df_filtrado['data'] = df_filtrado['created_at'].dt.date
+
+# Criar uma coluna que marca o intervalo de 3 dias
+df_filtrado['intervalo_3dias'] = (df_filtrado['created_at'] - df_filtrado['created_at'].min()).dt.days // 3 * 3
+
+# Calcular a taxa de resposta por intervalo de 3 dias
+taxa_resposta_3dias = df_filtrado.groupby(['intervalo_3dias', 'template']).apply(
+    lambda x: (x['categoria'] == 'resposta').sum() / (x['categoria'] == 'envio').sum() * 100 if (x['categoria'] == 'envio').sum() > 0 else 0
 ).reset_index(name='taxa_resposta')
-taxa_resposta_semanal_template['semana'] = taxa_resposta_semanal_template['semana'].dt.start_time
 
-fig3 = go.Figure()
+# Filtrar para taxas de resposta <= 100%
+taxa_resposta_3dias = taxa_resposta_3dias.loc[taxa_resposta_3dias['taxa_resposta'] <= 100].sort_values(by='intervalo_3dias')
 
-for template in taxa_resposta_semanal_template['template'].unique():
-    df_template = taxa_resposta_semanal_template[taxa_resposta_semanal_template['template'] == template]
-    fig3.add_trace(go.Scatter(
-        x=df_template['semana'],
-        y=df_template['taxa_resposta'],
+# Criar o gráfico
+fig3_3dias = go.Figure()
+
+# Adicionar traços para cada template
+for template in taxa_resposta_3dias['template'].unique():
+    df_temp = taxa_resposta_3dias[taxa_resposta_3dias['template'] == template]
+    fig3_3dias.add_trace(go.Scatter(
+        x=df_temp['intervalo_3dias'],
+        y=df_temp['taxa_resposta'],
         mode='lines+markers',
-        name=f'{template} - taxa %',
+        name=template
     ))
 
-fig3.update_layout(
-    title="Taxa de Resposta Semanal por Template",
-    xaxis_title="Semana",
+# Atualizar layout
+fig3_3dias.update_layout(
+    title="Taxa de Resposta a Cada 3 Dias por Template",
+    xaxis_title="Intervalo de 3 Dias",
     yaxis_title="Taxa de Resposta (%)",
-    yaxis=dict(range=[0, 100], dtick=5),  # eixo Y de 0 a 100 com passo de 5
-    height=300,
-    margin=dict(l=40, r=40, t=40, b=40),
-    legend_title="Template",
+    yaxis=dict(
+        range=[0, 100],
+        dtick=5,
+        ticks="outside",
+        tickformat=".0f"
+    ),
+    height=500,
+    showlegend=True  # Remover a legenda, caso não queira exibir
 )
 
 st.plotly_chart(fig3, use_container_width=True)
-
-st.write(taxa_resposta_semanal_template)
