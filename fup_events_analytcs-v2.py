@@ -330,5 +330,5 @@ fig3_semanal.update_layout(
 st.plotly_chart(fig3_semanal, use_container_width=True)
 
 
-st.write(df_filtrado['event_name'])
-st.write(df_filtrado['nome_exibicao'])
+st.write(df_filtrado['event_name']).unique()
+st.write(df_filtrado['nome_exibicao']).unique()
