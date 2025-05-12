@@ -328,3 +328,7 @@ fig3_semanal.update_layout(
 
 # Exibir o gráfico no Streamlit
 st.plotly_chart(fig3_semanal, use_container_width=True)
+
+
+st.write(df_filtrado['event_name'])
+st.write(df_filtrado['nome_exibicao'])
