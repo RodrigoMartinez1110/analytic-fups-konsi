@@ -57,9 +57,9 @@ df_filtrado = df_filtrado[(df_filtrado['created_at'].dt.time >= hora_inicio) & (
 # ---------------------------------------
 # CORREÇÃO DO DATAFRAME
 # ---------------------------------------
-df_filtrado = df[
-    df['event_name'].str.contains("_", na=False) & 
-    ~df['event_name'].str.contains("{", na=False)
+df_filtrado = df_filtrado[
+    df_filtrado['event_name'].str.contains("_", na=False) & 
+    ~df_filtrado['event_name'].str.contains("{", na=False)
 ]
 
 eventos_validos = [
@@ -139,32 +139,57 @@ df_filtrado[['template', 'tipo', 'categoria']] = df_filtrado['event_name'].apply
 df_filtrado = df_filtrado[df_filtrado['template'] != 'desconhecido'].copy()
 
 # -------------------------------
+# AJUSTE DE NOME DOS EVENTOS
+# -------------------------------
+NOMES_RESUMIDOS = {
+    "Outbound_qualificado_optinnegv01_envio_v1": "Qualificado msg 1",
+    "Outbound_qualificado_optinnegv01_resposta_v1": "Qualificado msg 1",
+    "Outbound_qualificado_fup30min_envio_v1": "Qualificado fup30min",
+    "Outbound_qualificado_fup30min_resposta_v1": "Qualificado fup30min",
+    "Outbound_qualificado_fup2h_envio_v1": "Qualificado fup2h",
+    "Outbound_qualificado_fup2h_resposta_v1": "Qualificado fup2h",
+    "Outbound_qualificado_neg1_envio_v1": "Qualificado neg1",
+    "Outbound_qualificado_neg1_resposta_v1": "Qualificado neg1",
+    "Outbound_qualificado_neg2_envio_v1": "Qualificado neg2",
+    "Outbound_qualificado_neg2_resposta_v1": "Qualificado neg2",
+    "Outbound_qualificado_neg3_envio_v1": "Qualificado neg3",
+    "Outbound_qualificado_neg3_resposta_v1": "Qualificado neg3",
+    "Outbound_qualificado_neg_despedida_envio_v1": "Qualificado despedida",
+    "Outbound_qualificado_neg_despedida_resposta_v1": "Qualificado despedida",
+    "Outbound_qualificado_perda_Perda_v": "Qualificado perda"
+}
+
+df_filtrado['nome_exibicao'] = df_filtrado['event_name'].map(NOMES_RESUMIDOS).fillna(df_filtrado['template'])
+
+# -------------------------------
 # FILTRO DE TEMPLATES
 # -------------------------------
-templates_disponiveis = sorted(df_filtrado['template'].unique())
+templates_disponiveis = sorted(df_filtrado['nome_exibicao'].unique())
 opcoes_template = ["Todos"] + templates_disponiveis
 
 templates_selecionados = st.sidebar.multiselect(
     "Selecionar templates para análise",
-    options=opcoes_template,
+    options=["Todos"] + templates_disponiveis,
     default=["Todos"]
 )
 
-# Lógica: se "Todos" está selecionado ou nada selecionado, inclui todos
 if "Todos" in templates_selecionados or not templates_selecionados:
-    df_filtrado = df_filtrado[df_filtrado['template'].isin(templates_disponiveis)]
+    df_filtrado = df_filtrado[df_filtrado['nome_exibicao'].isin(templates_disponiveis)]
 else:
-    df_filtrado = df_filtrado[df_filtrado['template'].isin(templates_selecionados)]
+    df_filtrado = df_filtrado[df_filtrado['nome_exibicao'].isin(templates_selecionados)]
+
+
+
 
 
 
 # -------------------------------
 # Gráfico 1: Barras empilhadas + Linha de taxa de resposta
 # -------------------------------
-distribuicao_resposta = df_filtrado.groupby(['template', 'tipo'])['tipo'].size().unstack(fill_value=0)
+distribuicao_resposta = df_filtrado.groupby(['nome_exibicao', 'tipo'])['tipo'].size().unstack(fill_value=0)
 distribuicao_resposta_reset = distribuicao_resposta.reset_index()
 
-taxa_resposta = df_filtrado.groupby(['template', 'categoria'])['tipo'].size().unstack(fill_value=0)
+taxa_resposta = df_filtrado.groupby(['nome_exibicao', 'categoria'])['tipo'].size().unstack(fill_value=0)
 taxa_resposta['resposta'] = taxa_resposta.get('resposta', 0)
 taxa_resposta['envio'] = taxa_resposta.get('envio', 0)
 taxa_resposta['taxa_resposta'] = (taxa_resposta['resposta'] / taxa_resposta['envio']).fillna(0) * 100
@@ -174,13 +199,13 @@ fig1 = go.Figure()
 
 for tipo in distribuicao_resposta.columns:
     fig1.add_trace(go.Bar(
-        x=distribuicao_resposta_reset['template'],
+        x=distribuicao_resposta_reset['nome_exibicao']
         y=distribuicao_resposta_reset[tipo],
         name=tipo
     ))
 
 fig1.add_trace(go.Scatter(
-    x=taxa_resposta_reset['template'],
+    x=taxa_resposta_reset['nome_exibicao'],
     y=taxa_resposta_reset['taxa_resposta'],
     mode='lines+markers',
     name='Taxa de Resposta (%)',
@@ -253,6 +278,12 @@ fig2.update_layout(
 
 st.plotly_chart(fig2, use_container_width=True)
 
+
+
+# -------------------------------
+# Gráfico 3: Taxa de Resposta por Template (Horizontal)
+# -------------------------------
+
 # Criar uma coluna de data com o dia sem a hora
 df_filtrado['data'] = df_filtrado['created_at'].dt.date
 
@@ -260,7 +291,7 @@ df_filtrado['data'] = df_filtrado['created_at'].dt.date
 df_filtrado['semana'] = df_filtrado['created_at'].dt.to_period('W').dt.start_time
 
 # Calcular a taxa de resposta por semana
-taxa_resposta_semanal = df_filtrado.groupby(['semana', 'template']).apply(
+taxa_resposta_semanal = df_filtrado.groupby(['semana', 'nome_exibicao']).apply(
     lambda x: (x['categoria'] == 'resposta').sum() / (x['categoria'] == 'envio').sum() * 100 if (x['categoria'] == 'envio').sum() > 0 else 0
 ).reset_index(name='taxa_resposta')
 
@@ -271,13 +302,13 @@ taxa_resposta_semanal = taxa_resposta_semanal.loc[taxa_resposta_semanal['taxa_re
 fig3_semanal = go.Figure()
 
 # Adicionar traços para cada template
-for template in taxa_resposta_semanal['template'].unique():
-    df_temp = taxa_resposta_semanal[taxa_resposta_semanal['template'] == template]
+for nome in taxa_resposta_semanal['nome_exibicao'].unique():
+    df_temp = taxa_resposta_semanal[taxa_resposta_semanal['nome_exibicao'] == nome]
     fig3_semanal.add_trace(go.Scatter(
         x=df_temp['semana'],
         y=df_temp['taxa_resposta'],
         mode='lines+markers',
-        name=template
+        name=nome
     ))
 
 # Atualizar layout
