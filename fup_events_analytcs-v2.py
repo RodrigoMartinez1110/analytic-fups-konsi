@@ -1,7 +1,6 @@
 import time
 from datetime import time as dt_time
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
@@ -55,17 +54,15 @@ hora_fim = st.sidebar.time_input("Hora final", value=dt_time(23, 59))
 df_filtrado = df_filtrado[(df_filtrado['created_at'].dt.time >= hora_inicio) & (df_filtrado['created_at'].dt.time <= hora_fim)]
 
 # ---------------------------------------
-# CORREÇÃO DO DATAFRAME
+# Correção do DataFrame
 # ---------------------------------------
 df_filtrado = df_filtrado[
-    df_filtrado['event_name'].str.contains("_", na=False) & 
+    df_filtrado['event_name'].str.contains("_", na=False) &
     ~df_filtrado['event_name'].str.contains("{", na=False)
 ]
 
 eventos_validos = [
-    'outbound',
-    'ativação',
-    'outboud',  # possível erro de digitação incluso intencionalmente
+    'outbound', 'ativação', 'outboud',
     'robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0_Envio',
     'robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0_Resposta'
 ]
@@ -76,11 +73,9 @@ df_filtrado = df_filtrado[
     df_filtrado['event_name'].str.contains(padrao_regex, case=False, na=False)
 ]
 
-
 def extrair_template_e_tipo(event_name):
-    # Mapeia os eventos específicos de "robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0"
     if 'robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0' in event_name:
-        template = 'fup_10min'  # Simplificado para fup_10min para ambos os casos
+        template = 'fup_10min'
     else:
         match_template = re.search(
             r'(robo_giovanna_leads_ativos_\d+opt_in_ativo_10min_v\d+_(?:Resposta|Envio)|'
@@ -101,10 +96,8 @@ def extrair_template_e_tipo(event_name):
         )
         template = match_template.group(1).lower() if match_template else 'desconhecido'
 
-    # 2. Normalizar o nome do evento para facilitar o match
     lower = event_name.lower()
 
-    # 3. Mapear tipo do evento com base em palavras-chave
     if 'envio' in lower:
         tipo = 'envio'
     elif any(x in lower for x in ['bloquear', 'bloqueio']):
@@ -117,29 +110,27 @@ def extrair_template_e_tipo(event_name):
         tipo = 'saber mais'
     elif any(x in lower for x in ['perda', 'sem interação']):
         tipo = 'sem interação'
-    elif any(x in lower for x in ['resposta']):
+    elif 'resposta' in lower:
         tipo = 'resposta'
     else:
         tipo = 'desconhecido'
 
-    # 4. Categoria simplificada: envio, resposta ou desconhecido
     if tipo == 'envio':
         categoria = 'envio'
     elif tipo in ['bloquear', 'tel inválido', 'fora de contexto', 'saber mais', 'resposta']:
         categoria = 'resposta'
-    elif tipo in ['sem interação']:
+    elif tipo == 'sem interação':
         categoria = 'sem interação'
     else:
         categoria = 'desconhecido'
 
     return pd.Series([template, tipo, categoria])
 
-
 df_filtrado[['template', 'tipo', 'categoria']] = df_filtrado['event_name'].apply(extrair_template_e_tipo)
 df_filtrado = df_filtrado[df_filtrado['template'] != 'desconhecido'].copy()
 
 # -------------------------------
-# AJUSTE DE NOME DOS EVENTOS
+# Nomes resumidos
 # -------------------------------
 NOMES_RESUMIDOS = {
     "Outbound_qualificado_optinnegv01_envio_v1": "Qualificado msg 1",
@@ -162,11 +153,9 @@ NOMES_RESUMIDOS = {
 df_filtrado['nome_exibicao'] = df_filtrado['event_name'].map(NOMES_RESUMIDOS).fillna(df_filtrado['template'])
 
 # -------------------------------
-# FILTRO DE TEMPLATES
+# Filtro de templates
 # -------------------------------
 templates_disponiveis = sorted(df_filtrado['nome_exibicao'].unique())
-opcoes_template = ["Todos"] + templates_disponiveis
-
 templates_selecionados = st.sidebar.multiselect(
     "Selecionar templates para análise",
     options=["Todos"] + templates_disponiveis,
@@ -178,13 +167,8 @@ if "Todos" in templates_selecionados or not templates_selecionados:
 else:
     df_filtrado = df_filtrado[df_filtrado['nome_exibicao'].isin(templates_selecionados)]
 
-
-
-
-
-
 # -------------------------------
-# Gráfico 1: Barras empilhadas + Linha de taxa de resposta
+# Gráfico 1: Barras empilhadas + linha
 # -------------------------------
 distribuicao_resposta = df_filtrado.groupby(['nome_exibicao', 'tipo'])['tipo'].size().unstack(fill_value=0)
 distribuicao_resposta_reset = distribuicao_resposta.reset_index()
@@ -214,121 +198,57 @@ fig1.add_trace(go.Scatter(
 ))
 
 fig1.update_layout(
-    xaxis=dict(
-        showline=False,
-        showticklabels=True,
-        tickangle=45,
-        tickfont=dict(family="Arial", size=12, color="white")
-    ),
-    yaxis=dict(showgrid=False, zeroline=False, visible=False),
-    yaxis2=dict(
-        title=" ",
-        overlaying="y",
-        side="right",
-        showgrid=False,
-        zeroline=False,
-        visible=True,
-        tickfont=dict(color="white")
-    ),
+    xaxis=dict(tickangle=45),
+    yaxis2=dict(overlaying="y", side="right"),
     barmode='stack',
-    height=300,
-    legend_title_text="Tipo de Resposta",
-    legend=dict(font=dict(color="white")),
-    plot_bgcolor='rgba(0,0,0,0)',
-    paper_bgcolor='rgba(0,0,0,0)',
-    margin=dict(l=0, r=40, t=20, b=40),
-    hoverlabel= dict(
-        bgcolor="black",
-        font=dict(color="white")
-    )
+    height=300
 )
 
 st.plotly_chart(fig1, use_container_width=True)
 
 # -------------------------------
-# Gráfico 2: Taxa de Resposta por Template (Horizontal)
+# Gráfico 2: Taxa por template
 # -------------------------------
-taxa_resposta = df_filtrado.groupby(['template', 'categoria'])['tipo'].size().unstack(fill_value=0)
-taxa_resposta['resposta'] = taxa_resposta.get('resposta', 0)
-taxa_resposta['envio'] = taxa_resposta.get('envio', 0)
-taxa_resposta['taxa_resposta'] = (taxa_resposta['resposta'] / taxa_resposta['envio']).fillna(0) * 100
-taxa_resposta_reset = taxa_resposta[['taxa_resposta']].reset_index().sort_values('taxa_resposta')
+taxa_resposta_2 = df_filtrado.groupby(['template', 'categoria'])['tipo'].size().unstack(fill_value=0)
+taxa_resposta_2['resposta'] = taxa_resposta_2.get('resposta', 0)
+taxa_resposta_2['envio'] = taxa_resposta_2.get('envio', 0)
+taxa_resposta_2['taxa_resposta'] = (taxa_resposta_2['resposta'] / taxa_resposta_2['envio']).fillna(0) * 100
+taxa_resposta_reset = taxa_resposta_2[['taxa_resposta']].reset_index().sort_values('taxa_resposta')
 
 fig2 = go.Figure()
-
 fig2.add_trace(go.Bar(
     x=taxa_resposta_reset['taxa_resposta'],
     y=taxa_resposta_reset['template'],
-    orientation='h',
-    name='Taxa de Resposta (%)',
-    marker=dict(
-        color=taxa_resposta_reset['taxa_resposta'],
-        colorscale='Blues',
-        showscale=True
-    ),
+    orientation='h'
 ))
-
 fig2.update_layout(
     title="Taxa de Resposta por Template",
-    xaxis_title="Taxa de Resposta (%)",
-    yaxis_title="Template",
-    height=300,
-    margin=dict(l=40, r=40, t=40, b=40),
+    height=300
 )
-
 st.plotly_chart(fig2, use_container_width=True)
 
-
-
 # -------------------------------
-# Gráfico 3: Taxa de Resposta por Template (Horizontal)
+# Gráfico 3: Taxa de resposta semanal
 # -------------------------------
-
-# Criar uma coluna de data com o dia sem a hora
-df_filtrado['data'] = df_filtrado['created_at'].dt.date
-
-# Criar uma coluna que marca a semana (usando .dt.to_period('W'))
 df_filtrado['semana'] = df_filtrado['created_at'].dt.to_period('W').dt.start_time
-
-# Calcular a taxa de resposta por semana
 taxa_resposta_semanal = df_filtrado.groupby(['semana', 'nome_exibicao']).apply(
     lambda x: (x['categoria'] == 'resposta').sum() / (x['categoria'] == 'envio').sum() * 100 if (x['categoria'] == 'envio').sum() > 0 else 0
 ).reset_index(name='taxa_resposta')
+taxa_resposta_semanal = taxa_resposta_semanal[taxa_resposta_semanal['taxa_resposta'] <= 100]
 
-# Filtrar para taxas de resposta <= 100%
-taxa_resposta_semanal = taxa_resposta_semanal.loc[taxa_resposta_semanal['taxa_resposta'] <= 100].sort_values(by='semana')
-
-# Criar o gráfico
-fig3_semanal = go.Figure()
-
-# Adicionar traços para cada template
+fig3 = go.Figure()
 for nome in taxa_resposta_semanal['nome_exibicao'].unique():
     df_temp = taxa_resposta_semanal[taxa_resposta_semanal['nome_exibicao'] == nome]
-    fig3_semanal.add_trace(go.Scatter(
+    fig3.add_trace(go.Scatter(
         x=df_temp['semana'],
         y=df_temp['taxa_resposta'],
         mode='lines+markers',
         name=nome
     ))
 
-# Atualizar layout
-fig3_semanal.update_layout(
+fig3.update_layout(
     title="Taxa de Resposta Semanal por Template",
-    xaxis_title="Semana",
-    yaxis_title="Taxa de Resposta (%)",
-    yaxis=dict(
-        range=[0, 100],
-        dtick=5,
-        ticks="outside",
-        tickformat=".0f"
-    ),
     height=500,
-    showlegend=True  # Mostrar legenda
+    yaxis=dict(range=[0, 100])
 )
-
-# Exibir o gráfico no Streamlit
-st.plotly_chart(fig3_semanal, use_container_width=True)
-
-
-st.write(df_filtrado['event_name']).unique()
-st.write(df_filtrado['nome_exibicao']).unique()
+st.plotly_chart(fig3, use_container_width=True)
