@@ -199,7 +199,7 @@ fig1 = go.Figure()
 
 for tipo in distribuicao_resposta.columns:
     fig1.add_trace(go.Bar(
-        x=distribuicao_resposta_reset['nome_exibicao']
+        x=distribuicao_resposta_reset['nome_exibicao'],
         y=distribuicao_resposta_reset[tipo],
         name=tipo
     ))
