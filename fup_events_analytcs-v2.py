@@ -252,3 +252,5 @@ fig3.update_layout(
     yaxis=dict(range=[0, 100])
 )
 st.plotly_chart(fig3, use_container_width=True)
+
+st.write(df_filtrado['nome_exibicao']).unique()
