@@ -254,4 +254,4 @@ fig3.update_layout(
 st.plotly_chart(fig3, use_container_width=True)
 
 nomes_nao_mapeados = df_filtrado[~df_filtrado['event_name'].isin(NOMES_RESUMIDOS.keys())]['event_name'].unique()
-st.sidebar.write("Eventos novos não mapeados:", nomes_nao_mapeados)
+st.write("Eventos novos não mapeados:", nomes_nao_mapeados)
