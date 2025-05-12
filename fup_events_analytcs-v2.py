@@ -133,21 +133,21 @@ df_filtrado = df_filtrado[df_filtrado['template'] != 'desconhecido'].copy()
 # Nomes resumidos
 # -------------------------------
 NOMES_RESUMIDOS = {
-    "Outbound_qualificado_optinnegv01_envio_v1": "Qualificado msg 1",
-    "Outbound_qualificado_optinnegv01_resposta_v1": "Qualificado msg 1",
-    "Outbound_qualificado_fup30min_envio_v1": "Qualificado fup30min",
-    "Outbound_qualificado_fup30min_resposta_v1": "Qualificado fup30min",
-    "Outbound_qualificado_fup2h_envio_v1": "Qualificado fup2h",
-    "Outbound_qualificado_fup2h_resposta_v1": "Qualificado fup2h",
-    "Outbound_qualificado_neg1_envio_v1": "Qualificado neg1",
-    "Outbound_qualificado_neg1_resposta_v1": "Qualificado neg1",
-    "Outbound_qualificado_neg2_envio_v1": "Qualificado neg2",
-    "Outbound_qualificado_neg2_resposta_v1": "Qualificado neg2",
-    "Outbound_qualificado_neg3_envio_v1": "Qualificado neg3",
-    "Outbound_qualificado_neg3_resposta_v1": "Qualificado neg3",
-    "Outbound_qualificado_neg_despedida_envio_v1": "Qualificado despedida",
-    "Outbound_qualificado_neg_despedida_resposta_v1": "Qualificado despedida",
-    "Outbound_qualificado_perda_Perda_v": "Qualificado perda"
+    "outbound_qualificado_optinnegv01_envio_v1": "Qualificado msg 1",
+    "outbound_qualificado_optinnegv01_resposta_v1": "Qualificado msg 1",
+    "outbound_qualificado_fup30min_envio_v1": "Qualificado fup30min",
+    "outbound_qualificado_fup30min_resposta_v1": "Qualificado fup30min",
+    "outbound_qualificado_fup2h_envio_v1": "Qualificado fup2h",
+    "outbound_qualificado_fup2h_resposta_v1": "Qualificado fup2h",
+    "outbound_qualificado_neg1_envio_v1": "Qualificado neg1",
+    "outbound_qualificado_neg1_resposta_v1": "Qualificado neg1",
+    "outbound_qualificado_neg2_envio_v1": "Qualificado neg2",
+    "outbound_qualificado_neg2_resposta_v1": "Qualificado neg2",
+    "outbound_qualificado_neg3_envio_v1": "Qualificado neg3",
+    "outbound_qualificado_neg3_resposta_v1": "Qualificado neg3",
+    "outbound_qualificado_neg_despedida_envio_v1": "Qualificado despedida",
+    "outbound_qualificado_neg_despedida_resposta_v1": "Qualificado despedida",
+    "outbound_qualificado_perda_perda_v": "Qualificado perda"
 }
 
 df_filtrado['nome_exibicao'] = df_filtrado['event_name'].map(NOMES_RESUMIDOS).fillna(df_filtrado['template'])
