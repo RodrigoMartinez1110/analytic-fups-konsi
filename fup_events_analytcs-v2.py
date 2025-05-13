@@ -215,7 +215,7 @@ else:
 # -------------------------------
 # Gráfico 1: Barras empilhadas + linha
 # -------------------------------
-st.subheader("Desempenho dos Templates: Envios e respostas")
+st.subheader("1 - Desempenho dos Templates: Envios e respostas")
 # Agrupamento por tipo
 distribuicao_resposta = df_filtrado.groupby(['nome_exibicao', 'tipo'])['tipo'] \
     .size().unstack(fill_value=0).reset_index()
