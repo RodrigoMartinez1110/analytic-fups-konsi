@@ -363,7 +363,6 @@ st.write("---")
 # -------------------------------
 # Gráfico 3: Taxa de resposta semanal
 # -------------------------------
-
 # Adiciona a coluna de data
 df_filtrado['data'] = df_filtrado['created_at'].dt.date
 
@@ -376,8 +375,20 @@ taxa_diaria = df_filtrado.groupby(['data', 'nome_exibicao']).apply(
 # Limita a taxa a 100% e filtra as taxas maiores que 0
 taxa_diaria = taxa_diaria[(taxa_diaria['taxa_resposta'] > 0) & (taxa_diaria['taxa_resposta'] <= 100)]
 
+# Input do usuário para definir o Top N
+top_n = st.number_input("Escolha o número de templates (Top N):", min_value=1, max_value=50, value=10, step=1)
+
+# Calcula a média da taxa de resposta por template
+media_taxa = taxa_diaria.groupby('nome_exibicao')['taxa_resposta'].mean().sort_values(ascending=False)
+
+# Seleciona os Top N templates
+top_templates = media_taxa.head(top_n).index.tolist()
+
+# Filtra os dados para os Top N
+taxa_top = taxa_diaria[taxa_diaria['nome_exibicao'].isin(top_templates)]
+
 # Gera cores fixas por template
-nomes = sorted(taxa_diaria['nome_exibicao'].unique())
+nomes = sorted(taxa_top['nome_exibicao'].unique())
 paleta = px.colors.qualitative.Set2 + px.colors.qualitative.Set1
 cores = {nome: paleta[i % len(paleta)] for i, nome in enumerate(nomes)}
 
@@ -386,7 +397,7 @@ fig3 = go.Figure()
 
 # Adiciona as linhas de resposta ao gráfico
 for nome in nomes:
-    df_temp = taxa_diaria[taxa_diaria['nome_exibicao'] == nome]
+    df_temp = taxa_top[taxa_top['nome_exibicao'] == nome]
     fig3.add_trace(go.Scatter(
         x=df_temp['data'],
         y=df_temp['taxa_resposta'],
