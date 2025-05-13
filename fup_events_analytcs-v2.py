@@ -215,7 +215,7 @@ else:
 # -------------------------------
 # Gráfico 1: Barras empilhadas + linha
 # -------------------------------
-st.subtitle("Desempenho dos Templates: Envios e respostas")
+st.subheader("Desempenho dos Templates: Envios e respostas")
 # Agrupamento por tipo
 distribuicao_resposta = df_filtrado.groupby(['nome_exibicao', 'tipo'])['tipo'] \
     .size().unstack(fill_value=0).reset_index()
@@ -317,7 +317,7 @@ st.write("---")
 # -------------------------------
 # Gráfico 2: Taxa por template
 # -------------------------------
-st.subtitle("2 - Desempenho dos Templates: Taxa de respostas dos templates")
+st.subheader("2 - Desempenho dos Templates: Taxa de respostas dos templates")
 # Recria o DataFrame com taxa
 taxa_template = df_filtrado.groupby(['nome_exibicao', 'categoria'])['tipo'].size().unstack(fill_value=0)
 taxa_template['resposta'] = taxa_template.get('resposta', 0)
@@ -363,7 +363,7 @@ st.write("---")
 # -------------------------------
 # Gráfico 3: Taxa de resposta semanal
 # -------------------------------
-st.subtitle("3 - Série Temporal de Engajamento por Template")
+st.subheader("3 - Série Temporal de Engajamento por Template")
 # Adiciona a coluna de data
 df_filtrado['data'] = df_filtrado['created_at'].dt.date
 
