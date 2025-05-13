@@ -290,15 +290,16 @@ fig1.update_layout(
     height=550,
     width=1100,
     legend=dict(
-        orientation='h',
-        yanchor='top',
-        y=1.1,     # Legenda abaixo do gráfico
-        xanchor='center',
-        x=0.5,
-        font=dict(size=10)
+        orientation="h",
+        yanchor="bottom",
+        y=1.1,
+        xanchor="center",
+        x=0.5
     ),
-    margin=dict(t=30, l=60, r=60, b=130)
+    margin=dict(l=40, r=40, t=40, b=40),
+    template="plotly_dark"
 )
+
 
 st.plotly_chart(fig1, use_container_width=True)
 
