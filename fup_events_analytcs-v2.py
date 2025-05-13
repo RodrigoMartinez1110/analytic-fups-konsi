@@ -6,6 +6,7 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 from pymongo import MongoClient
 import re
+import plotly.express as px
 
 # -------------------------------
 # Conexão com o MongoDB
