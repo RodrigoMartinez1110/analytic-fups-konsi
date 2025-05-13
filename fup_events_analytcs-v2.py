@@ -62,9 +62,7 @@ df_filtrado = df_filtrado[
 ]
 
 eventos_validos = [
-    'outbound', 'ativação', 'outboud',
-    'robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0_Envio',
-    'robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0_Resposta'
+    'outbound', 'ativação', 'outboud', 'cad'
 ]
 
 padrao_regex = '|'.join(eventos_validos)
@@ -74,47 +72,39 @@ df_filtrado = df_filtrado[
 ]
 
 def extrair_template_e_tipo(event_name):
-    if 'robo_giovanna_leads_ativos_0opt_in_ativo_10min_v0' in event_name:
-        template = 'fup_10min'
-    else:
-        match_template = re.search(
-            r'(robo_giovanna_leads_ativos_\d+opt_in_ativo_10min_v\d+_(?:Resposta|Envio)|'
-            r'opt_in_ativo(?:_[a-z0-9]+_v\d+)?|'
-            r'optin(?:_?[a-z0-9]+)?|'
-            r'fup_15_min_v\d+|'
-            r'fup[123]_ativo|'
-            r'fup2h|'
-            r'fup30min|'
-            r'optinnegv01|'
-            r'neg[123]|'
-            r'despedida_ativo|'
-            r'perda_sem interação|'
-            r'disparo_novo_\d+|'
-            r'proposta)',
-            event_name,
-            re.IGNORECASE
-        )
-        template = match_template.group(1).lower() if match_template else 'desconhecido'
+    event_name = event_name.lower()
 
-    lower = event_name.lower()
+    # Regex ajustada e mais flexível
+    match_template = re.search(
+        r'(fup_15_min_v[1-6]_outboud_tx_resp_(?:envio_|resposta_[a-z.]+|resposta_)|'
+        r'outbound_giovanna[_a-z0-9]*opt_in_ativo[_a-z0-9]*|'
+        r'opt_in_1st_cad_v[0-9]_(?:envio|resposta)|'
+        r'outbound_qualificado_(optinnegv01|fup30min|fup2h|neg1|neg2|neg3|neg_despedida|perda)(?:_[a-z]+)?_?(?:envio|resposta)?(?:_siape)?_?v\d*|'
+        r'optin(?:_?[a-z0-9]+)?)',
+        event_name
+    )
 
-    if 'envio' in lower:
+    template = match_template.group(1) if match_template else 'desconhecido'
+
+    # Tipo
+    if 'envio' in event_name:
         tipo = 'envio'
-    elif any(x in lower for x in ['bloquear', 'bloqueio']):
+    elif 'bloquear' in event_name or 'bloqueio' in event_name:
         tipo = 'bloquear'
-    elif any(x in lower for x in ['tel.invalido', 'pessoa errada']):
+    elif 'tel.invalido' in event_name or 'pessoa errada' in event_name:
         tipo = 'tel inválido'
-    elif any(x in lower for x in ['fora.contexto', 'out.contexto', 'texto']):
+    elif 'out.contexto' in event_name or 'fora.contexto' in event_name or 'texto' in event_name:
         tipo = 'fora de contexto'
-    elif any(x in lower for x in ['saber.mais', 'saber mais']):
+    elif 'saber.mais' in event_name or 'saber mais' in event_name:
         tipo = 'saber mais'
-    elif any(x in lower for x in ['perda', 'sem interação']):
+    elif 'sem interação' in event_name or 'perda' in event_name:
         tipo = 'sem interação'
-    elif 'resposta' in lower:
+    elif 'resposta' in event_name:
         tipo = 'resposta'
     else:
         tipo = 'desconhecido'
 
+    # Categoria
     if tipo == 'envio':
         categoria = 'envio'
     elif tipo in ['bloquear', 'tel inválido', 'fora de contexto', 'saber mais', 'resposta']:
@@ -127,14 +117,16 @@ def extrair_template_e_tipo(event_name):
     return pd.Series([template, tipo, categoria])
 
 df_filtrado[['template', 'tipo', 'categoria']] = df_filtrado['event_name'].apply(extrair_template_e_tipo)
-df_filtrado = df_filtrado[df_filtrado['template'] != 'desconhecido'].copy()
+df_filtrado = df_filtrado[df_filtrado['template'] != 'desconhecido']
 
-# -------------------------------
-# Nomes resumidos
-# -------------------------------
+
+
 NOMES_RESUMIDOS = {
+    # Qualificado
     "outbound_qualificado_optinnegv01_envio_v1": "Qualificado msg 1",
     "outbound_qualificado_optinnegv01_resposta_v1": "Qualificado msg 1",
+    "outbound_qualificado_optinnegv01_envio_siape_v1": "Qualificado msg 1 siape",
+    "outbound_qualificado_optinnegv01_resposta_siape_v1": "Qualificado msg 1 siape",
     "outbound_qualificado_fup30min_envio_v1": "Qualificado fup30min",
     "outbound_qualificado_fup30min_resposta_v1": "Qualificado fup30min",
     "outbound_qualificado_fup2h_envio_v1": "Qualificado fup2h",
@@ -147,10 +139,57 @@ NOMES_RESUMIDOS = {
     "outbound_qualificado_neg3_resposta_v1": "Qualificado neg3",
     "outbound_qualificado_neg_despedida_envio_v1": "Qualificado despedida",
     "outbound_qualificado_neg_despedida_resposta_v1": "Qualificado despedida",
-    "outbound_qualificado_perda_perda_v": "Qualificado perda"
+    "outbound_qualificado_perda_perda_v": "Qualificado perda",
+
+    # FUP 15 min
+    "fup_15_min_v1_outboud_tx_resp_envio_": "FUP 15min v1",
+    "fup_15_min_v1_outboud_tx_resp_resposta_": "FUP 15min v1",
+    "fup_15_min_v1_outboud_tx_resp_resposta_tel.invalido": "FUP 15min v1",
+    "fup_15_min_v1_outboud_tx_resp_resposta_bloquear": "FUP 15min v1",
+    "fup_15_min_v1_outboud_tx_resp_resposta_out.contexto": "FUP 15min v1",
+    "fup_15_min_v1_outboud_tx_resp_resposta_saber.mais": "FUP 15min v1",
+    "fup_15_min_v2_outboud_tx_resp_envio_": "FUP 15min v2",
+    "fup_15_min_v2_outboud_tx_resp_resposta_tel.invalido": "FUP 15min v2",
+    "fup_15_min_v2_outboud_tx_resp_resposta_bloquear": "FUP 15min v2",
+    "fup_15_min_v2_outboud_tx_resp_resposta_out.contexto": "FUP 15min v2",
+    "fup_15_min_v2_outboud_tx_resp_resposta_saber.mais": "FUP 15min v2",
+    "fup_15_min_v3_outboud_tx_resp_envio_": "FUP 15min v3",
+    "fup_15_min_v3_outboud_tx_resp_resposta_": "FUP 15min v3",
+    "fup_15_min_v4_outboud_tx_resp_envio_": "FUP 15min v4",
+    "fup_15_min_v4_outboud_tx_resp_resposta_tel.invalido": "FUP 15min v4",
+    "fup_15_min_v4_outboud_tx_resp_resposta_bloquear": "FUP 15min v4",
+    "fup_15_min_v4_outboud_tx_resp_resposta_out.contexto": "FUP 15min v4",
+    "fup_15_min_v4_outboud_tx_resp_resposta_saber.mais": "FUP 15min v4",
+    "fup_15_min_v5_outboud_tx_resp_envio_": "FUP 15min v5",
+    "fup_15_min_v5_outboud_tx_resp_resposta_": "FUP 15min v5",
+    "fup_15_min_v6_outboud_tx_resp_envio_": "FUP 15min v6",
+    "fup_15_min_v6_outboud_tx_resp_resposta_": "FUP 15min v6",
+
+    # Giovanna
+    "outbound_giovanna__opt_in_ativo__envio_v1": "Giovanna optin",
+    "outbound_giovanna__opt_in_ativo__resposta_saber mais_v1": "Giovanna optin",
+    "outbound_giovanna__opt_in_ativo__resposta_pessoa errada_v1": "Giovanna optin",
+    "outbound_giovanna__opt_in_ativo__resposta_bloqueio_v1": "Giovanna optin",
+    "outbound_giovanna__opt_in_ativo__resposta_texto_v1": "Giovanna optin",
+    "outbound_giovanna_opt_in_ativo_30min_v0__envio_v1": "Giovanna optin 30min",
+    "outbound_giovanna_opt_in_ativo_30min_v0__resposta_v1": "Giovanna optin 30min",
+    "outbound_giovanna_opt_in_ativo_10min_v0__envio_v1": "Giovanna optin 10min",
+    "outbound_giovanna_opt_in_ativo_10min_v0__resposta_v1": "Giovanna optin 10min",
+
+    # Optin 1st cad
+    "opt_in_1st_cad_v0_envio": "Optin 1st cad v0",
+    "opt_in_1st_cad_v0_resposta": "Optin 1st cad v0",
+    "opt_in_1st_cad_v1_envio": "Optin 1st cad v1",
+    "opt_in_1st_cad_v1_resposta": "Optin 1st cad v1",
+    "opt_in_1st_cad_v2_envio": "Optin 1st cad v2",
+    "opt_in_1st_cad_v2_resposta": "Optin 1st cad v2",
+    "opt_in_1st_cad_v3_envio": "Optin 1st cad v3",
+    "opt_in_1st_cad_v3_resposta": "Optin 1st cad v3"
 }
 
 df_filtrado['nome_exibicao'] = df_filtrado['event_name'].map(NOMES_RESUMIDOS).fillna(df_filtrado['template'])
+
+
 
 # -------------------------------
 # Filtro de templates
@@ -167,91 +206,213 @@ if "Todos" in templates_selecionados or not templates_selecionados:
 else:
     df_filtrado = df_filtrado[df_filtrado['nome_exibicao'].isin(templates_selecionados)]
 
+
+
 # -------------------------------
 # Gráfico 1: Barras empilhadas + linha
 # -------------------------------
-distribuicao_resposta = df_filtrado.groupby(['nome_exibicao', 'tipo'])['tipo'].size().unstack(fill_value=0)
-distribuicao_resposta_reset = distribuicao_resposta.reset_index()
+# Agrupamento por tipo
+distribuicao_resposta = df_filtrado.groupby(['nome_exibicao', 'tipo'])['tipo'] \
+    .size().unstack(fill_value=0).reset_index()
 
-taxa_resposta = df_filtrado.groupby(['nome_exibicao', 'categoria'])['tipo'].size().unstack(fill_value=0)
+# Agrupamento para taxa de resposta
+taxa_resposta = df_filtrado.groupby(['nome_exibicao', 'categoria'])['tipo'] \
+    .size().unstack(fill_value=0).reset_index()
+
+# Garantir colunas
 taxa_resposta['resposta'] = taxa_resposta.get('resposta', 0)
 taxa_resposta['envio'] = taxa_resposta.get('envio', 0)
-taxa_resposta['taxa_resposta'] = (taxa_resposta['resposta'] / taxa_resposta['envio']).fillna(0) * 100
-taxa_resposta_reset = taxa_resposta[['taxa_resposta']].reset_index()
+taxa_resposta['taxa_resposta'] = (taxa_resposta['resposta'] / taxa_resposta['envio']) \
+    .replace([float('inf'), float('nan')], 0) * 100
 
+# Seleciona somente taxa + nome
+taxa_resposta = taxa_resposta[['nome_exibicao', 'taxa_resposta']]
+
+# Ordena pela soma dos eventos (opcional)
+distribuicao_resposta['total'] = distribuicao_resposta.drop(columns='nome_exibicao').sum(axis=1)
+distribuicao_resposta = distribuicao_resposta.sort_values(by='total', ascending=False).drop(columns='total')
+
+# Alinha taxa_resposta com a mesma ordem de nome_exibicao
+taxa_resposta = taxa_resposta.set_index('nome_exibicao').loc[distribuicao_resposta['nome_exibicao']].reset_index()
+
+# Cores suaves
+cores_discretas = px.colors.qualitative.Set2
+
+# Figura
 fig1 = go.Figure()
 
-for tipo in distribuicao_resposta.columns:
+# Adiciona as barras empilhadas por tipo
+for tipo in distribuicao_resposta.columns[1:]:
     fig1.add_trace(go.Bar(
-        x=distribuicao_resposta_reset['nome_exibicao'],
-        y=distribuicao_resposta_reset[tipo],
-        name=tipo
+        x=distribuicao_resposta['nome_exibicao'],
+        y=distribuicao_resposta[tipo],
+        name=tipo,
+        hovertemplate=(
+            "<b>Template:</b> %{x}<br>" +
+            "<b>Tipo:</b> " + tipo + "<br>" +
+            "<b>Quantidade:</b> %{y}<extra></extra>"
+        )
     ))
 
+# Adiciona a linha de taxa de resposta
 fig1.add_trace(go.Scatter(
-    x=taxa_resposta_reset['nome_exibicao'],
-    y=taxa_resposta_reset['taxa_resposta'],
+    x=taxa_resposta['nome_exibicao'],
+    y=taxa_resposta['taxa_resposta'],
     mode='lines+markers',
     name='Taxa de Resposta (%)',
     line=dict(color='white', dash='dot'),
-    yaxis='y2'
+    yaxis='y2',
+    hovertemplate=(
+        "<b>Template:</b> %{x}<br>" +
+        "<b>Taxa de Resposta:</b> %{y:.2f}%<extra></extra>"
+    )
 ))
 
+# Layout final
 fig1.update_layout(
-    xaxis=dict(tickangle=45),
-    yaxis2=dict(overlaying="y", side="right"),
+    title='',  # Título removido
+    xaxis=dict(
+        title='Template',
+        tickangle=45,
+        tickfont=dict(size=10),
+    ),
+    yaxis=dict(
+        title='Quantidade de Eventos'
+    ),
+    yaxis2=dict(
+        title='Taxa de Resposta (%)',
+        overlaying="y",
+        side="right",
+        showgrid=False
+    ),
     barmode='stack',
-    height=300
+    height=550,
+    width=1100,
+    legend=dict(
+        orientation='h',
+        yanchor='top',
+        y=1.1,     # Legenda abaixo do gráfico
+        xanchor='center',
+        x=0.5,
+        font=dict(size=10)
+    ),
+    margin=dict(t=30, l=60, r=60, b=130)
 )
 
 st.plotly_chart(fig1, use_container_width=True)
 
+
+
+
+
+
+
+
 # -------------------------------
 # Gráfico 2: Taxa por template
 # -------------------------------
-taxa_resposta_2 = df_filtrado.groupby(['template', 'categoria'])['tipo'].size().unstack(fill_value=0)
-taxa_resposta_2['resposta'] = taxa_resposta_2.get('resposta', 0)
-taxa_resposta_2['envio'] = taxa_resposta_2.get('envio', 0)
-taxa_resposta_2['taxa_resposta'] = (taxa_resposta_2['resposta'] / taxa_resposta_2['envio']).fillna(0) * 100
-taxa_resposta_reset = taxa_resposta_2[['taxa_resposta']].reset_index().sort_values('taxa_resposta')
+# Recria o DataFrame com taxa
+taxa_template = df_filtrado.groupby(['nome_exibicao', 'categoria'])['tipo'].size().unstack(fill_value=0)
+taxa_template['resposta'] = taxa_template.get('resposta', 0)
+taxa_template['envio'] = taxa_template.get('envio', 0)
+taxa_template['taxa_resposta'] = (taxa_template['resposta'] / taxa_template['envio']).fillna(0) * 100
 
-fig2 = go.Figure()
-fig2.add_trace(go.Bar(
-    x=taxa_resposta_reset['taxa_resposta'],
-    y=taxa_resposta_reset['template'],
-    orientation='h'
+# Ordena por taxa de resposta
+taxa_template = taxa_template[['taxa_resposta']].reset_index().sort_values('taxa_resposta')
+
+# Calcula altura baseada na quantidade de barras
+altura = max(400, len(taxa_template) * 25)
+
+# Cria gráfico de barras horizontal com rótulos
+fig2 = go.Figure(go.Bar(
+    x=taxa_template['taxa_resposta'],
+    y=taxa_template['nome_exibicao'],
+    orientation='h',
+    text=taxa_template['taxa_resposta'].round(1).astype(str) + '%',
+    textposition='outside',
+    marker=dict(color='rgba(58, 71, 80, 0.6)', line=dict(color='rgba(58, 71, 80, 1.0)', width=1))
 ))
+
 fig2.update_layout(
-    title="Taxa de Resposta por Template",
-    height=300
+    title="Taxa de Resposta por Template (Nome Exibição)",
+    xaxis_title="Taxa de Resposta (%)",
+    yaxis_title="Template",
+    bargap=0.3,  # Espaço entre as barras
+    height=altura,
+    margin=dict(l=200, r=20, t=50, b=40),  # Mais espaço para nomes longos
+    xaxis=dict(range=[0, taxa_template['taxa_resposta'].max() * 1.1])  # Dá um espaço à direita para texto
 )
+
+
 st.plotly_chart(fig2, use_container_width=True)
+
+
+
+
+
+
+
 
 # -------------------------------
 # Gráfico 3: Taxa de resposta semanal
 # -------------------------------
-df_filtrado['semana'] = df_filtrado['created_at'].dt.to_period('W').dt.start_time
-taxa_resposta_semanal = df_filtrado.groupby(['semana', 'nome_exibicao']).apply(
-    lambda x: (x['categoria'] == 'resposta').sum() / (x['categoria'] == 'envio').sum() * 100 if (x['categoria'] == 'envio').sum() > 0 else 0
-).reset_index(name='taxa_resposta')
-taxa_resposta_semanal = taxa_resposta_semanal[taxa_resposta_semanal['taxa_resposta'] <= 100]
+# 1. Adiciona coluna de data (dia específico)
+df_filtrado['data'] = df_filtrado['created_at'].dt.date
 
+# 2. Cálculo da taxa de resposta diária
+taxa_diaria = df_filtrado.groupby(['data', 'nome_exibicao']).apply(
+    lambda x: (x['categoria'] == 'resposta').sum() / (x['categoria'] == 'envio').sum() * 100
+    if (x['categoria'] == 'envio').sum() > 0 else 0
+).reset_index(name='taxa_resposta')
+
+# 3. Limita a taxa a 100%
+taxa_diaria = taxa_diaria[taxa_diaria['taxa_resposta'] <= 100]
+
+# 4. Filtra apenas os dados onde a taxa de resposta é maior que 0
+taxa_diaria = taxa_diaria[taxa_diaria['taxa_resposta'] > 0]
+
+# 5. Cores fixas por template
+nomes = sorted(taxa_diaria['nome_exibicao'].unique())
+paleta = px.colors.qualitative.Set2 + px.colors.qualitative.Set1
+cores = {nome: paleta[i % len(paleta)] for i, nome in enumerate(nomes)}
+
+# 6. Cria o gráfico
 fig3 = go.Figure()
-for nome in taxa_resposta_semanal['nome_exibicao'].unique():
-    df_temp = taxa_resposta_semanal[taxa_resposta_semanal['nome_exibicao'] == nome]
+for nome in nomes:
+    df_temp = taxa_diaria[taxa_diaria['nome_exibicao'] == nome]
     fig3.add_trace(go.Scatter(
-        x=df_temp['semana'],
+        x=df_temp['data'],
         y=df_temp['taxa_resposta'],
         mode='lines+markers',
-        name=nome
+        name=nome,
+        line=dict(color=cores[nome]),
+        hovertemplate=( 
+            "<b>Template:</b> " + nome + "<br>" +
+            "<b>Data:</b> %{x|%d/%m/%Y}<br>" +
+            "<b>Taxa de Resposta:</b> %{y:.2f}%<extra></extra>"
+        )
     ))
 
+# 7. Layout
 fig3.update_layout(
-    title="Taxa de Resposta Semanal por Template",
+    title='',  # Remova ou ajuste conforme preferir
     height=500,
-    yaxis=dict(range=[0, 100])
+    xaxis=dict(
+        title="Data",
+        tickformat="%d/%m",
+        type='date'
+    ),
+    yaxis=dict(
+        title="Taxa de Resposta (%)",
+        range=[0, 100]
+    ),
+    legend=dict(
+        orientation="v",
+        yanchor="top",
+        y=1,
+        xanchor="left",
+        x=1.02
+    ),
+    margin=dict(l=40, r=140, t=20, b=60)
 )
 st.plotly_chart(fig3, use_container_width=True)
-
-nomes_nao_mapeados = df_filtrado[~df_filtrado['event_name'].isin(NOMES_RESUMIDOS.keys())]['event_name'].unique()
-st.write("Eventos novos não mapeados:", nomes_nao_mapeados)
