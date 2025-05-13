@@ -358,13 +358,30 @@ st.plotly_chart(fig2, use_container_width=True)
 # -------------------------------
 # Gráfico 3: Taxa de resposta semanal
 # -------------------------------
+# 1. Adiciona coluna de data (dia específico)
+df_filtrado['data'] = df_filtrado['created_at'].dt.date
+
+# 2. Cálculo da taxa de resposta diária
+taxa_diaria = df_filtrado.groupby(['data', 'nome_exibicao']).apply(
+    lambda x: (x['categoria'] == 'resposta').sum() / (x['categoria'] == 'envio').sum() * 100
+    if (x['categoria'] == 'envio').sum() > 0 else 0
+).reset_index(name='taxa_resposta')
+
+# 3. Limita a taxa a 100%
+taxa_diaria = taxa_diaria[taxa_diaria['taxa_resposta'] <= 100]
+
+# 4. Filtra apenas os dados onde a taxa de resposta é maior que 0
+taxa_diaria = taxa_diaria[taxa_diaria['taxa_resposta'] > 0]
+
+# 5. Cores fixas por template
+nomes = sorted(taxa_diaria['nome_exibicao'].unique())
+paleta = px.colors.qualitative.Set2 + px.colors.qualitative.Set1
+cores = {nome: paleta[i % len(paleta)] for i, nome in enumerate(nomes)}
+
+# 6. Cria o gráfico
 fig3 = go.Figure()
 for nome in nomes:
     df_temp = taxa_diaria[taxa_diaria['nome_exibicao'] == nome]
-    # Calcular total de envios e respostas para exibir no hover
-    total_envios = df_temp[df_temp['categoria'] == 'envio'].shape[0]
-    total_respostas = df_temp[df_temp['categoria'] == 'resposta'].shape[0]
-    
     fig3.add_trace(go.Scatter(
         x=df_temp['data'],
         y=df_temp['taxa_resposta'],
@@ -374,16 +391,13 @@ for nome in nomes:
         hovertemplate=( 
             "<b>Template:</b> " + nome + "<br>" +
             "<b>Data:</b> %{x|%d/%m/%Y}<br>" +
-            "<b>Taxa de Resposta:</b> %{y:.2f}%<br>" +
-            "<b>Total de Envios:</b> " + str(total_envios) + "<br>" +
-            "<b>Total de Respostas:</b> " + str(total_respostas) + "<br>" +
-            "<extra></extra>"
+            "<b>Taxa de Resposta:</b> %{y:.2f}%<extra></extra>"
         )
     ))
 
 # 7. Layout
 fig3.update_layout(
-    title='Taxa de Resposta Semanal',
+    title='',  # Remova ou ajuste conforme preferir
     height=500,
     xaxis=dict(
         title="Data",
@@ -401,11 +415,6 @@ fig3.update_layout(
         xanchor="left",
         x=1.02
     ),
-    margin=dict(l=40, r=140, t=40, b=60),
-    plot_bgcolor='#111111',
-    paper_bgcolor='#111111',
-    font=dict(color='white')
+    margin=dict(l=40, r=140, t=20, b=60)
 )
-
-# Exibe o gráfico
 st.plotly_chart(fig3, use_container_width=True)
