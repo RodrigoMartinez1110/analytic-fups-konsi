@@ -237,7 +237,7 @@ distribuicao_resposta = distribuicao_resposta.sort_values(by='total', ascending=
 taxa_resposta = taxa_resposta.set_index('nome_exibicao').loc[distribuicao_resposta['nome_exibicao']].reset_index()
 
 # Cores suaves
-cores_discretas = px.colors.qualitative.Set2
+cores_discretas = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
 
 # Figura
 fig1 = go.Figure()
