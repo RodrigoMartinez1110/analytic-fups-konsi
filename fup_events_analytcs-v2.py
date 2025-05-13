@@ -361,28 +361,27 @@ st.plotly_chart(fig2, use_container_width=True)
 # -------------------------------
 # Gráfico 3: Taxa de resposta semanal
 # -------------------------------
-# 1. Adiciona coluna de data (dia específico)
+# Adiciona a coluna de data
 df_filtrado['data'] = df_filtrado['created_at'].dt.date
 
-# 2. Cálculo da taxa de resposta diária
+# Calcula a taxa de resposta diária
 taxa_diaria = df_filtrado.groupby(['data', 'nome_exibicao']).apply(
     lambda x: (x['categoria'] == 'resposta').sum() / (x['categoria'] == 'envio').sum() * 100
     if (x['categoria'] == 'envio').sum() > 0 else 0
 ).reset_index(name='taxa_resposta')
 
-# 3. Limita a taxa a 100%
-taxa_diaria = taxa_diaria[taxa_diaria['taxa_resposta'] <= 100]
+# Limita a taxa a 100% e filtra as taxas maiores que 0
+taxa_diaria = taxa_diaria[(taxa_diaria['taxa_resposta'] > 0) & (taxa_diaria['taxa_resposta'] <= 100)]
 
-# 4. Filtra apenas os dados onde a taxa de resposta é maior que 0
-taxa_diaria = taxa_diaria[taxa_diaria['taxa_resposta'] > 0]
-
-# 5. Cores fixas por template
+# Gera cores fixas por template
 nomes = sorted(taxa_diaria['nome_exibicao'].unique())
 paleta = px.colors.qualitative.Set2 + px.colors.qualitative.Set1
 cores = {nome: paleta[i % len(paleta)] for i, nome in enumerate(nomes)}
 
-# 6. Cria o gráfico
+# Cria o gráfico
 fig3 = go.Figure()
+
+# Adiciona as linhas de resposta ao gráfico
 for nome in nomes:
     df_temp = taxa_diaria[taxa_diaria['nome_exibicao'] == nome]
     fig3.add_trace(go.Scatter(
@@ -391,16 +390,15 @@ for nome in nomes:
         mode='lines+markers',
         name=nome,
         line=dict(color=cores[nome]),
-        hovertemplate=( 
+        hovertemplate=(
             "<b>Template:</b> " + nome + "<br>" +
             "<b>Data:</b> %{x|%d/%m/%Y}<br>" +
             "<b>Taxa de Resposta:</b> %{y:.2f}%<extra></extra>"
         )
     ))
 
-# 7. Layout
+# Configura o layout
 fig3.update_layout(
-    title='',  # Remova ou ajuste conforme preferir
     height=500,
     xaxis=dict(
         title="Data",
@@ -420,4 +418,6 @@ fig3.update_layout(
     ),
     margin=dict(l=40, r=140, t=20, b=60)
 )
+
+# Exibe o gráfico
 st.plotly_chart(fig3, use_container_width=True)
