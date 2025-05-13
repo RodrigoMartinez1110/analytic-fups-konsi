@@ -363,35 +363,44 @@ st.write("---")
 # -------------------------------
 # Gráfico 3: Taxa de resposta semanal
 # -------------------------------
-# Número de templates mais frequentes a exibir
-top_n = 10
 
-# Filtra os top N templates com mais registros
-top_templates = df['nome_exibicao'].value_counts().nlargest(top_n).index.tolist()
-df_top = df[df['nome_exibicao'].isin(top_templates)]
+# Adiciona a coluna de data
+df_filtrado['data'] = df_filtrado['created_at'].dt.date
 
-# Paleta de cores suaves e distintas
-cores = px.colors.qualitative.Plotly + px.colors.qualitative.Set2
-color_map = {nome: cores[i % len(cores)] for i, nome in enumerate(top_templates)}
+# Calcula a taxa de resposta diária
+taxa_diaria = df_filtrado.groupby(['data', 'nome_exibicao']).apply(
+    lambda x: (x['categoria'] == 'resposta').sum() / (x['categoria'] == 'envio').sum() * 100
+    if (x['categoria'] == 'envio').sum() > 0 else 0
+).reset_index(name='taxa_resposta')
 
-# Cria a figura
+# Limita a taxa a 100% e filtra as taxas maiores que 0
+taxa_diaria = taxa_diaria[(taxa_diaria['taxa_resposta'] > 0) & (taxa_diaria['taxa_resposta'] <= 100)]
+
+# Gera cores fixas por template
+nomes = sorted(taxa_diaria['nome_exibicao'].unique())
+paleta = px.colors.qualitative.Set2 + px.colors.qualitative.Set1
+cores = {nome: paleta[i % len(paleta)] for i, nome in enumerate(nomes)}
+
+# Cria o gráfico
 fig3 = go.Figure()
 
-# Adiciona uma linha por template
-for nome in top_templates:
-    df_template = df_top[df_top['nome_exibicao'] == nome]
-
+# Adiciona as linhas de resposta ao gráfico
+for nome in nomes:
+    df_temp = taxa_diaria[taxa_diaria['nome_exibicao'] == nome]
     fig3.add_trace(go.Scatter(
-        x=df_template['data'],
-        y=df_template['taxa_resposta'],
+        x=df_temp['data'],
+        y=df_temp['taxa_resposta'],
         mode='lines+markers',
         name=nome,
-        line=dict(color=color_map[nome]),
-        hovertemplate="<b>Template:</b> %{text}<br><b>Data:</b> %{x|%d/%m}<br><b>Taxa:</b> %{y:.2f}%<extra></extra>",
-        text=[nome]*len(df_template)
+        line=dict(color=cores[nome]),
+        hovertemplate=(
+            "<b>Template:</b> " + nome + "<br>" +
+            "<b>Data:</b> %{x|%d/%m/%Y}<br>" +
+            "<b>Taxa de Resposta:</b> %{y:.2f}%<extra></extra>"
+        )
     ))
 
-# Layout do gráfico
+# Configura o layout
 fig3.update_layout(
     height=500,
     xaxis=dict(
@@ -410,10 +419,9 @@ fig3.update_layout(
         xanchor="left",
         x=1.02
     ),
-    margin=dict(l=40, r=140, t=20, b=60),
-    template="plotly_dark"
+    margin=dict(l=40, r=140, t=20, b=60)
 )
 
-# Exibe no Streamlit
-st.subheader("3 - Evolução Diária da Taxa de Resposta por Template")
+# Exibe o gráfico
+st.subheader("3 - Série Temporal de Engajamento por Template")
 st.plotly_chart(fig3, use_container_width=True)
