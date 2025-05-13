@@ -7,6 +7,9 @@ from streamlit_autorefresh import st_autorefresh
 from pymongo import MongoClient
 import re
 import plotly.express as px
+import warnings
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # -------------------------------
 # Conexão com o MongoDB
