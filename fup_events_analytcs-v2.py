@@ -215,6 +215,7 @@ else:
 # -------------------------------
 # Gráfico 1: Barras empilhadas + linha
 # -------------------------------
+st.subtitle("Desempenho dos Templates: Envios e respostas")
 # Agrupamento por tipo
 distribuicao_resposta = df_filtrado.groupby(['nome_exibicao', 'tipo'])['tipo'] \
     .size().unstack(fill_value=0).reset_index()
@@ -308,7 +309,7 @@ st.plotly_chart(fig1, use_container_width=True)
 
 
 
-
+st.write("---")
 
 
 
@@ -316,6 +317,7 @@ st.plotly_chart(fig1, use_container_width=True)
 # -------------------------------
 # Gráfico 2: Taxa por template
 # -------------------------------
+st.subtitle("2 - Desempenho dos Templates: Taxa de respostas dos templates")
 # Recria o DataFrame com taxa
 taxa_template = df_filtrado.groupby(['nome_exibicao', 'categoria'])['tipo'].size().unstack(fill_value=0)
 taxa_template['resposta'] = taxa_template.get('resposta', 0)
@@ -353,7 +355,7 @@ st.plotly_chart(fig2, use_container_width=True)
 
 
 
-
+st.write("---")
 
 
 
@@ -361,6 +363,7 @@ st.plotly_chart(fig2, use_container_width=True)
 # -------------------------------
 # Gráfico 3: Taxa de resposta semanal
 # -------------------------------
+st.subtitle("3 - Série Temporal de Engajamento por Template")
 # Adiciona a coluna de data
 df_filtrado['data'] = df_filtrado['created_at'].dt.date
 
