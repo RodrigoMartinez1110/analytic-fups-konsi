@@ -1,10 +1,11 @@
 import time
-from datetime import time as dt_time
+from datetime import time as dt_time, datetime
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
 import re
 import plotly.express as px
 import warnings
@@ -15,9 +16,24 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 # Conexão com o MongoDB
 # -------------------------------
 uri = st.secrets["mongodb"]["uri"]
-client = MongoClient(uri)
-db = client["growth"]
-collection = db["events"]
+
+@st.cache_resource
+def get_client():
+    try:
+        client = MongoClient(uri, serverSelectionTimeoutMS=3000)
+        client.admin.command("ping")
+        return client
+    except ConnectionFailure:
+        st.error("❌ Não foi possível conectar ao MongoDB. Verifique a conexão.")
+        st.stop()
+
+@st.cache_data(ttl=600)
+def carregar_dados():
+    client = get_client()
+    dados = list(client["growth"]["events"].find())
+    df = pd.DataFrame(dados)
+    df["created_at"] = pd.to_datetime(df["created_at"])
+    return df
 
 st.set_page_config(
     page_title="Meu Dashboard",
@@ -28,21 +44,23 @@ st.set_page_config(
 # Atualização periódica a cada 10 minutos
 _ = st_autorefresh(interval=600_000, limit=None, key="auto_refresh")
 
-# Função para carregar e filtrar os dados
-@st.cache_resource
-def get_client():
-    return MongoClient(uri)
-
-@st.cache_data(ttl=600)
-def carregar_dados():
-    client = get_client()
-    dados = list(client["growth"]["events"].find())
-    df = pd.DataFrame(dados)
-    df["created_at"] = pd.to_datetime(df["created_at"])
-    return df
-
 # Carrega os dados
 df = carregar_dados()
+
+# -------------------------------
+# Status da conexão e atualização
+# -------------------------------
+col1, col2 = st.columns(2)
+
+with col1:
+    try:
+        get_client().admin.command("ping")
+        st.success("✅ Conectado ao MongoDB")
+    except:
+        st.error("❌ Falha na conexão com o MongoDB")
+
+with col2:
+    st.caption(f"📅 Atualizado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
 
 # -------------------------------
 # Filtros de data e horário
@@ -78,7 +96,6 @@ df_filtrado = df_filtrado[
 def extrair_template_e_tipo(event_name):
     event_name = event_name.lower()
 
-    # Regex ajustada e mais flexível
     match_template = re.search(
         r'(fup_15_min_v[1-6]_outboud_tx_resp_(?:envio_|resposta_[a-z.]+|resposta_)|'
         r'outbound_giovanna[_a-z0-9]*opt_in_ativo[_a-z0-9]*|'
@@ -122,7 +139,6 @@ def extrair_template_e_tipo(event_name):
 
 df_filtrado[['template', 'tipo', 'categoria']] = df_filtrado['event_name'].apply(extrair_template_e_tipo)
 df_filtrado = df_filtrado[df_filtrado['template'] != 'desconhecido']
-
 
 
 NOMES_RESUMIDOS = {
